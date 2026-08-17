@@ -11,9 +11,88 @@
   --accent:       #00e676;
   --accent-blue:  #1a73e8;
   --text-primary: #e6edf3;
+  --text-soft:    #c9d1d9;
   --text-muted:   #8b949e;
   --border:       #30363d;
 }
+
+/* ---- Light theme ----
+   Dark is the default/native look (see main.py CLAUDE.md history); light is an
+   optional, fully-supported alternative, not an afterthought. Toggled via
+   [data-theme="light"] on <html> (set by an inline script in base.html's <head> to
+   avoid a flash of the wrong theme, and by the button wired in nexussecure.js).
+
+   Rather than rewriting every template's `bg-dark text-white border-secondary`
+   Bootstrap utility classes, this re-points those *specific* classes at the theme
+   tokens below when light mode is active — same approach already used for
+   .text-fg/.text-fg-muted/.text-fg-soft, just extended to cover Bootstrap's own
+   hardcoded-dark utilities everywhere they're used (forms, modals, tables). */
+:root[data-theme="light"] {
+  --bg-primary:   #f3f5f8;
+  --bg-sidebar:   #ffffff;
+  --bg-card:      #ffffff;
+  --bg-topbar:    #ffffff;
+  --accent:       #0a8f4f;
+  --accent-blue:  #1a73e8;
+  --text-primary: #14181f;
+  --text-soft:    #3d4550;
+  --text-muted:   #64707d;
+  --border:       #dde2e8;
+}
+:root[data-theme="light"] body { background: var(--bg-primary); color: var(--text-primary); }
+:root[data-theme="light"] .bg-sidebar { box-shadow: 1px 0 0 var(--border); } /* border-right reads better as a shadow on white */
+:root[data-theme="light"] .card-dark,
+:root[data-theme="light"] .kpi-card { box-shadow: 0 1px 3px rgba(20,24,31,.06); }
+
+/* Bootstrap utilities used throughout the templates for forms/modals/tables —
+   re-pointed at the theme tokens instead of their hardcoded dark defaults. */
+:root[data-theme="light"] .bg-dark,
+:root[data-theme="light"] .modal-content.bg-dark { background-color: var(--bg-card) !important; }
+:root[data-theme="light"] .text-white { color: var(--text-primary) !important; }
+:root[data-theme="light"] .border-secondary { border-color: var(--border) !important; }
+:root[data-theme="light"] .btn-close-white { filter: none; }
+:root[data-theme="light"] .table-dark {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--text-primary);
+  --bs-table-border-color: var(--border);
+}
+:root[data-theme="light"] .table-hover > tbody > tr:hover { background: rgba(20,24,31,.03); }
+:root[data-theme="light"] .card-dark h5,
+:root[data-theme="light"] .card-dark h6,
+:root[data-theme="light"] .card-dark label,
+:root[data-theme="light"] .card-dark .form-text,
+:root[data-theme="light"] .topbar .text-muted { color: var(--text-soft) !important; }
+:root[data-theme="light"] .form-control,
+:root[data-theme="light"] .form-select {
+  background-color: #ffffff !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+}
+:root[data-theme="light"] .form-control:focus,
+:root[data-theme="light"] .form-select:focus {
+  background-color: #ffffff !important;
+  color: var(--text-primary) !important;
+}
+:root[data-theme="light"] .form-control::placeholder { color: #9aa4b0 !important; }
+:root[data-theme="light"] input:-webkit-autofill,
+:root[data-theme="light"] input:-webkit-autofill:hover,
+:root[data-theme="light"] input:-webkit-autofill:focus,
+:root[data-theme="light"] input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  caret-color: var(--text-primary);
+}
+:root[data-theme="light"] ::-webkit-scrollbar-thumb { background: #c7cdd6; }
+/* The log viewer stays a dark "terminal" panel in both themes on purpose — its text
+   colors are tuned for that dark background, same idea as a code block. */
+
+/* ---- Text color utilities ----
+   Use these instead of inline style="color:#…" so a palette change is a one-line
+   edit here instead of a grep-and-replace across every template. */
+.text-fg       { color: var(--text-primary) !important; }
+.text-fg-soft  { color: var(--text-soft) !important; }
+.text-fg-muted { color: var(--text-muted) !important; }
+.text-high     { color: #fd7e14 !important; } /* matches .badge-high / .bg-orange */
 
 /* Base */
 *, body { margin: 0; padding: 0; box-sizing: border-box; }
@@ -136,11 +215,17 @@ input:-webkit-autofill:active {
 
 /* ---- Sidebar collapse ---- */
 #sidebar { overflow: hidden; }
-#sidebar.collapsed { width: 62px; }
+/* !important: without it this loses to #sidebar's own base width rule in practice
+   despite having higher specificity on paper — likely a flex min-content interaction.
+   Forcing it here is simpler and more robust than fighting the flex algorithm. */
+#sidebar.collapsed { width: 62px !important; min-width: 62px !important; flex-basis: 62px !important; }
 #sidebar.collapsed .sidebar-brand span.fw-bold,
 #sidebar.collapsed .sidebar-link span,
-#sidebar.collapsed #sidebar-user,
+#sidebar.collapsed .btn-outline-secondary span,
 #sidebar.collapsed .btn-outline-danger span { display: none; }
+/* #sidebar-user carries Bootstrap's .d-flex, which sets display:flex !important —
+   needs !important here too or it never actually hides. */
+#sidebar.collapsed #sidebar-user { display: none !important; }
 #sidebar.collapsed .sidebar-brand { justify-content: center; padding: .75rem !important; }
 #sidebar.collapsed .sidebar-link   { justify-content: center; padding: .6rem !important; }
 #sidebar.collapsed .sidebar-link i { margin: 0 !important; }
@@ -149,6 +234,18 @@ input:-webkit-autofill:active {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ---- Table skeleton (loading) ---- */
+.skeleton-row td { padding: .85rem .5rem; }
+.skeleton-bar { display: inline-block; height: 11px; border-radius: 4px; background: var(--border); }
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-bar { animation: skeleton-pulse 1.4s ease-in-out infinite; }
+}
+@keyframes skeleton-pulse { 0%, 100% { opacity: .35; } 50% { opacity: .75; } }
+
+/* ---- Table empty state ---- */
+.empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); font-size: .9rem; }
+.empty-state i { display: block; font-size: 1.9rem; margin-bottom: .6rem; opacity: .55; }
 
 
 /* ---- Responsive ---- */

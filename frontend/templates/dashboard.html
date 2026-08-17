@@ -10,7 +10,7 @@
 <div id="alerts-panel" class="mb-3 d-none">
   <div class="card-dark p-3">
     <div class="d-flex align-items-center justify-content-between mb-2">
-      <h6 class="mb-0" style="color:#e6edf3;font-weight:600"><i class="bi bi-bell-fill text-accent me-2"></i>Alertes</h6>
+      <h6 class="mb-0 text-fg" style="font-weight:600"><i class="bi bi-bell-fill text-accent me-2"></i>Alertes</h6>
       <button onclick="localStorage.removeItem('nexus_dismissed_alerts');location.reload()"
               class="btn btn-sm btn-outline-secondary" style="font-size:.75rem">
         <i class="bi bi-arrow-clockwise me-1"></i>Réafficher tout
@@ -49,19 +49,19 @@
     </div>
   </div>
   <div class="card-dark p-3">
-    <h6 class="mb-3" style="color:#e6edf3;font-weight:600">
+    <h6 class="mb-3 text-fg" style="font-weight:600">
       <i class="bi bi-people-fill text-accent me-2"></i>Vue par client
     </h6>
     <div class="table-responsive">
       <table class="table table-dark table-hover table-sm mb-0">
         <thead>
           <tr style="border-bottom:1px solid #30363d">
-            <th style="color:#8b949e;font-size:.78rem">Client</th>
-            <th style="color:#8b949e;font-size:.78rem">Email</th>
-            <th style="color:#8b949e;font-size:.78rem">Scans</th>
-            <th style="color:#8b949e;font-size:.78rem">Vulnérabilités</th>
-            <th style="color:#8b949e;font-size:.78rem">Critiques</th>
-            <th style="color:#8b949e;font-size:.78rem">Score risque</th>
+            <th class="text-fg-muted" style="font-size:.78rem">Client</th>
+            <th class="text-fg-muted" style="font-size:.78rem">Email</th>
+            <th class="text-fg-muted" style="font-size:.78rem">Scans</th>
+            <th class="text-fg-muted" style="font-size:.78rem">Vulnérabilités</th>
+            <th class="text-fg-muted" style="font-size:.78rem">Critiques</th>
+            <th class="text-fg-muted" style="font-size:.78rem">Score risque</th>
           </tr>
         </thead>
         <tbody id="admin-clients-tbody"></tbody>
@@ -101,12 +101,12 @@
   <div class="row g-3 mb-4">
     <div class="col-lg-3">
       <div class="card-dark p-3 h-100 d-flex flex-column align-items-center justify-content-center">
-        <h6 class="mb-3 w-100" style="color:#e6edf3;font-weight:600">Score de risque global</h6>
+        <h6 class="mb-3 w-100 text-fg" style="font-weight:600">Score de risque global</h6>
         <div style="position:relative;width:160px;height:160px">
           <canvas id="gaugeChart"></canvas>
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-            <span id="gauge-value" style="font-size:2rem;font-weight:800;color:#e6edf3">—</span>
-            <span style="font-size:.72rem;color:#8b949e">/ 100</span>
+            <span id="gauge-value" class="text-fg" style="font-size:2rem;font-weight:800">—</span>
+            <span class="text-fg-muted" style="font-size:.72rem">/ 100</span>
           </div>
         </div>
         <div id="gauge-label" class="mt-2 badge" style="font-size:.78rem"></div>
@@ -114,26 +114,28 @@
     </div>
     <div class="col-lg-4">
       <div class="card-dark p-3 h-100">
-        <h6 class="mb-3" style="color:#e6edf3;font-weight:600">Répartition des vulnérabilités</h6>
+        <h6 class="mb-3 text-fg" style="font-weight:600">Répartition des vulnérabilités</h6>
         <canvas id="chartVulns" height="200"></canvas>
       </div>
     </div>
     <div class="col-lg-5">
       <div class="card-dark p-3 h-100">
-        <h6 class="mb-3" style="color:#e6edf3;font-weight:600">
+        <h6 class="mb-3 text-fg" style="font-weight:600">
           <i class="bi bi-clock-history me-2 text-accent"></i>Historique des scans
         </h6>
-        <table class="table table-dark table-hover table-sm mb-0">
-          <thead>
-            <tr style="border-bottom:1px solid #30363d">
-              <th style="color:#8b949e;font-size:.78rem">#</th>
-              <th style="color:#8b949e;font-size:.78rem">Cible</th>
-              <th style="color:#8b949e;font-size:.78rem">Statut</th>
-              <th style="color:#8b949e;font-size:.78rem">Date</th>
-            </tr>
-          </thead>
-          <tbody id="recent-scans-tbody"></tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-dark table-hover table-sm mb-0">
+            <thead>
+              <tr style="border-bottom:1px solid #30363d">
+                <th class="text-fg-muted" style="font-size:.78rem">#</th>
+                <th class="text-fg-muted" style="font-size:.78rem">Cible</th>
+                <th class="text-fg-muted" style="font-size:.78rem">Statut</th>
+                <th class="text-fg-muted" style="font-size:.78rem">Date</th>
+              </tr>
+            </thead>
+            <tbody id="recent-scans-tbody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -148,13 +150,13 @@
         <div style="position:relative;width:180px;height:180px;margin-bottom:1rem">
           <canvas id="c-gaugeChart"></canvas>
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-            <span id="c-score" style="font-size:2.5rem;font-weight:800;color:#e6edf3">—</span>
-            <span style="font-size:.8rem;color:#8b949e">/ 100</span>
+            <span id="c-score" class="text-fg" style="font-size:2.5rem;font-weight:800">—</span>
+            <span class="text-fg-muted" style="font-size:.8rem">/ 100</span>
           </div>
         </div>
-        <h5 class="mb-1" style="color:#e6edf3;font-weight:700">Votre score de sécurité</h5>
+        <h5 class="mb-1 text-fg" style="font-weight:700">Votre score de sécurité</h5>
         <div id="c-score-badge" class="badge fs-6 px-3 py-2 mt-1">—</div>
-        <p class="mt-3 mb-0" style="color:#8b949e;font-size:.85rem">Basé sur vos derniers audits de sécurité.</p>
+        <p class="mt-3 mb-0 text-fg-muted" style="font-size:.85rem">Basé sur vos derniers audits de sécurité.</p>
       </div>
     </div>
     <div class="col-lg-8">
@@ -168,12 +170,12 @@
         <div class="col-6">
           <div class="kpi-card">
             <div class="kpi-icon bg-orange"><i class="bi bi-shield-exclamation"></i></div>
-            <div><div class="kpi-value" style="color:#fd7e14" id="c-kpi-high">—</div><div class="kpi-label">Risques élevés</div></div>
+            <div><div class="kpi-value text-high" id="c-kpi-high">—</div><div class="kpi-label">Risques élevés</div></div>
           </div>
         </div>
         <div class="col-12">
           <div class="card-dark p-3">
-            <h6 style="color:#e6edf3;font-weight:600" class="mb-3">
+            <h6 class="mb-3 text-fg" style="font-weight:600">
               <i class="bi bi-list-check text-accent me-2"></i>Ce qu'il faut faire en priorité
             </h6>
             <div id="c-priorities"></div>
@@ -182,9 +184,16 @@
       </div>
     </div>
   </div>
+  <div class="card-dark p-3 mb-3">
+    <h6 class="mb-3 text-fg" style="font-weight:600">
+      <i class="bi bi-graph-up text-accent me-2"></i>Évolution du score de risque
+    </h6>
+    <div id="c-history-empty" class="empty-state d-none"><i class="bi bi-graph-up"></i>Pas encore assez d'historique — reviens après un deuxième rapport.</div>
+    <canvas id="c-historyChart" height="90"></canvas>
+  </div>
   <div class="card-dark p-3">
     <div class="d-flex align-items-center justify-content-between mb-3">
-      <h6 class="mb-0" style="color:#e6edf3;font-weight:600">
+      <h6 class="mb-0 text-fg" style="font-weight:600">
         <i class="bi bi-file-earmark-pdf text-accent me-2"></i>Mes rapports
       </h6>
       <a href="/reports" class="btn btn-sm btn-outline-secondary">Voir tous</a>
@@ -205,10 +214,12 @@ function scoreLabel(s) {
 }
 function makeDoughnut(canvasId, score) {
   const c = scoreColor(score);
+  const trackColor = document.documentElement.getAttribute("data-theme") === "light"
+    ? "rgba(20,24,31,.08)" : "rgba(255,255,255,.06)";
   new Chart(document.getElementById(canvasId), {
     type: "doughnut",
     data: { datasets: [{ data: [score, 100 - score],
-      backgroundColor: [c, "rgba(255,255,255,.06)"], borderWidth: 0,
+      backgroundColor: [c, trackColor], borderWidth: 0,
       circumference: 270, rotation: 225 }] },
     options: { cutout: "75%", plugins: { legend: { display: false }, tooltip: { enabled: false } },
                animation: { animateRotate: true, duration: 900 } }
@@ -240,7 +251,7 @@ async function loadAlerts() {
         `<div class="alert-row d-flex align-items-center gap-2 mb-2 p-2"
              style="background:${color}18;border:1px solid ${color}55;border-radius:8px">
           <i class="bi ${iconMap[a.type]||'bi-info-circle'}" style="color:${color};font-size:1.1rem;flex-shrink:0"></i>
-          <span style="color:#e6edf3;font-size:.88rem;flex-grow:1">${a.message}</span>
+          <span class="text-fg" style="font-size:.88rem;flex-grow:1">${a.message}</span>
           <button onclick="dismissAlert('${key}',this)"
             style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
                    border-radius:50%;width:24px;height:24px;flex-shrink:0;
@@ -260,23 +271,26 @@ async function loadAlerts() {
   // ── ADMIN ──
   if (role === "admin") {
     document.getElementById("view-admin").classList.remove("d-none");
+    const tbody = document.getElementById("admin-clients-tbody");
+    tableSkeleton(tbody, 6);
     const s = await apiGet("/api/dashboard/admin-stats");
     document.getElementById("a-kpi-clients").textContent  = s.total_clients;
     document.getElementById("a-kpi-scans").textContent    = s.total_scans;
     document.getElementById("a-kpi-vulns").textContent    = s.total_vulnerabilities;
     document.getElementById("a-kpi-critical").textContent = s.critical;
-    const tbody = document.getElementById("admin-clients-tbody");
+    tbody.innerHTML = "";
     if (!s.clients.length) {
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="color:#8b949e">Aucun client</td></tr>`;
+      tableEmpty(tbody, 6, "Aucun client pour l'instant.", "bi-people");
+      return;
     }
     s.clients.forEach(c => {
       const scoreHtml = c.risk_score !== null
         ? `<span style="color:${scoreColor(c.risk_score)};font-weight:600">${c.risk_score}/100</span>`
-        : `<span style="color:#8b949e">—</span>`;
+        : `<span class="text-fg-muted">—</span>`;
       tbody.insertAdjacentHTML("beforeend", `
         <tr>
-          <td><strong style="color:#e6edf3">${c.username}</strong></td>
-          <td style="color:#8b949e">${c.email}</td>
+          <td><strong class="text-fg">${c.username}</strong></td>
+          <td class="text-fg-muted">${c.email}</td>
           <td>${c.scans}</td>
           <td>${c.vulnerabilities}</td>
           <td>${c.critical > 0 ? `<span class="text-danger fw-bold">${c.critical}</span>` : c.critical}</td>
@@ -302,27 +316,61 @@ async function loadAlerts() {
     if (s.critical > 0) prio.insertAdjacentHTML("beforeend",
       `<div class="d-flex align-items-center gap-2 mb-2">
         <span class="badge bg-danger">PRIORITÉ 1</span>
-        <span style="color:#e6edf3">${s.critical} risque${s.critical > 1 ? 's' : ''} critique${s.critical > 1 ? 's' : ''} à corriger immédiatement</span>
+        <span class="text-fg">${s.critical} risque${s.critical > 1 ? 's' : ''} critique${s.critical > 1 ? 's' : ''} à corriger immédiatement</span>
       </div>`);
     if (s.high > 0) prio.insertAdjacentHTML("beforeend",
       `<div class="d-flex align-items-center gap-2 mb-2">
         <span class="badge bg-warning text-dark">PRIORITÉ 2</span>
-        <span style="color:#e6edf3">${s.high} risque${s.high > 1 ? 's' : ''} élevé${s.high > 1 ? 's' : ''} — à corriger sous 30 jours</span>
+        <span class="text-fg">${s.high} risque${s.high > 1 ? 's' : ''} élevé${s.high > 1 ? 's' : ''} — à corriger sous 30 jours</span>
       </div>`);
     if (!s.critical && !s.high) prio.innerHTML =
-      `<div style="color:#00e676"><i class="bi bi-check-circle-fill me-2"></i>Aucun risque critique ou élevé — bonne posture !</div>`;
+      `<div class="text-accent"><i class="bi bi-check-circle-fill me-2"></i>Aucun risque critique ou élevé — bonne posture !</div>`;
     try {
       const reports = await apiGet("/api/reports/");
       const list = document.getElementById("c-reports-list");
-      if (!reports.length) { list.innerHTML = `<p style="color:#8b949e">Aucun rapport disponible.</p>`; }
+
+      // History chart wants oldest → newest; /api/reports/ comes back newest-first.
+      const chronological = [...reports].reverse();
+      if (chronological.length < 2) {
+        document.getElementById("c-history-empty").classList.remove("d-none");
+        document.getElementById("c-historyChart").classList.add("d-none");
+      } else {
+        const theme = chartThemeColors();
+        new Chart(document.getElementById("c-historyChart"), {
+          type: "line",
+          data: {
+            labels: chronological.map(r => new Date(r.created_at).toLocaleDateString("fr-FR")),
+            datasets: [{
+              label: "Score de risque",
+              data: chronological.map(r => r.risk_score),
+              borderColor: "#00e676",
+              backgroundColor: "rgba(0,230,118,.12)",
+              fill: true,
+              tension: .3,
+              pointBackgroundColor: "#00e676",
+              pointRadius: 3,
+              pointHoverRadius: 5,
+            }],
+          },
+          options: {
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { ticks: { color: theme.tick }, grid: { color: theme.grid } },
+              y: { ticks: { color: theme.tick }, grid: { color: theme.grid }, beginAtZero: true, suggestedMax: 100 },
+            },
+          },
+        });
+      }
+
+      if (!reports.length) { list.innerHTML = `<p class="text-fg-muted">Aucun rapport disponible.</p>`; }
       else reports.slice(0, 5).forEach(r => {
         list.insertAdjacentHTML("beforeend", `
           <div class="d-flex align-items-center justify-content-between p-2"
                style="background:rgba(255,255,255,.04);border-radius:8px">
             <div>
               <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
-              <span style="color:#e6edf3">Rapport #${r.id}</span>
-              <small class="ms-2" style="color:#8b949e">${new Date(r.created_at).toLocaleDateString("fr-FR")}</small>
+              <span class="text-fg">Rapport #${r.id}</span>
+              <small class="ms-2 text-fg-muted">${new Date(r.created_at).toLocaleDateString("fr-FR")}</small>
             </div>
             <a href="/api/reports/${r.id}/download" class="btn btn-sm btn-outline-secondary">
               <i class="bi bi-download me-1"></i>PDF
@@ -335,6 +383,7 @@ async function loadAlerts() {
 
   // ── ANALYSTE ──
   document.getElementById("view-analyst").classList.remove("d-none");
+  tableSkeleton(document.getElementById("recent-scans-tbody"), 4);
   const stats = await apiGet("/api/dashboard/stats");
   document.getElementById("kpi-scans").textContent    = stats.total_scans;
   document.getElementById("kpi-hosts").textContent    = stats.total_hosts;
@@ -354,9 +403,14 @@ async function loadAlerts() {
             datasets: [{ data: Object.values(vstats),
                          backgroundColor: Object.keys(vstats).map(k => cMap[k] || "#6c757d"),
                          borderWidth: 0 }] },
-    options: { plugins: { legend: { labels: { color: "#8b949e", boxWidth: 12 } } } }
+    options: { plugins: { legend: { labels: { color: chartThemeColors().tick, boxWidth: 12 } } } }
   });
   const tbody = document.getElementById("recent-scans-tbody");
+  tbody.innerHTML = "";
+  if (!stats.recent_scans.length) {
+    tableEmpty(tbody, 4, "Aucun scan pour l'instant.", "bi-radar");
+    return;
+  }
   stats.recent_scans.forEach(s => {
     tbody.insertAdjacentHTML("beforeend",
       `<tr>

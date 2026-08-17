@@ -5,43 +5,61 @@
 
 {% block content %}
 <div class="card-dark p-3">
-  <table class="table table-dark table-hover table-sm">
-    <thead><tr><th>#</th><th>Scan</th><th>Score de risque</th><th>Date</th><th>Actions</th></tr></thead>
-    <tbody id="reports-tbody"></tbody>
-  </table>
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <input type="text" class="form-control form-control-sm bg-dark border-secondary text-white" id="reports-search"
+           placeholder="Rechercher par # de scan..." style="width:220px">
+    <button class="btn btn-sm btn-outline-accent" id="reports-export" title="Exporter en CSV">
+      <i class="bi bi-download me-1"></i>CSV
+    </button>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-dark table-hover table-sm">
+      <thead><tr>
+        <th data-sort="id">#</th>
+        <th data-sort="scan_id">Scan</th>
+        <th data-sort="risk_score">Score de risque</th>
+        <th data-sort="created_at">Date</th>
+        <th>Actions</th>
+      </tr></thead>
+      <tbody id="reports-tbody"></tbody>
+    </table>
+  </div>
+  <div id="reports-pagination"></div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-async function downloadReport(id) {
-  const res = await fetch(`/api/reports/${id}/download`, { headers: authHeaders() });
-  if (!res.ok) { alert("Erreur lors du téléchargement"); return; }
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = `nexussecure_report_${id}.pdf`;
-  a.click(); URL.revokeObjectURL(url);
+const _reportsThead = document.querySelector("#reports-tbody").closest("table").querySelector("thead");
+
+const reportsCtl = createTableController({
+  pageSize: 10,
+  searchFields: ["scan_id", "id"],
+  onRender: (rows, meta) => {
+    renderReportRows(rows);
+    renderPaginationControls(document.getElementById("reports-pagination"), meta, p => reportsCtl.setPage(p));
+  },
+});
+
+function riskClass(score) {
+  // Thresholds match pdf.py::_risk_label (0-100 scale): 0-40 Sécurisé/Faible,
+  // 41-60 Moyen, 61-100 Élevé/Critique.
+  return score >= 61 ? "text-danger" : score >= 41 ? "text-warning" : "text-success";
 }
 
-async function sendEmailReport(id) {
-  const res = await fetch(`/api/reports/${id}/send-email`, { method: "POST", headers: authHeaders() });
-  const data = await res.json();
-  if (res.ok) alert(`📧 Email simulé envoyé à ${data.to}`);
-  else alert("Erreur lors de l'envoi");
-}
-
-(async () => {
-  const reports = await apiGet("/api/reports");
+function renderReportRows(reports) {
   const tbody = document.getElementById("reports-tbody");
+  tbody.innerHTML = "";
+  if (!reports.length) {
+    tableEmpty(tbody, 5, "Aucun rapport ne correspond à ta recherche.", "bi-file-earmark-pdf");
+    return;
+  }
   reports.forEach(r => {
-    const score = r.risk_score;
-    const cls = score >= 7 ? "text-danger" : score >= 4 ? "text-warning" : "text-success";
     tbody.insertAdjacentHTML("beforeend", `
       <tr>
         <td>${r.id}</td>
         <td>Scan #${r.scan_id}</td>
-        <td><span class="${cls} fw-bold">${score} / 10</span></td>
+        <td><span class="${riskClass(r.risk_score)} fw-bold">${r.risk_score} / 100</span></td>
         <td>${new Date(r.created_at).toLocaleString("fr-FR")}</td>
         <td>
           <button class="btn btn-sm btn-outline-accent me-1" onclick="downloadReport(${r.id})">
@@ -53,6 +71,45 @@ async function sendEmailReport(id) {
         </td>
       </tr>`);
   });
+}
+
+async function downloadReport(id) {
+  const res = await fetch(`/api/reports/${id}/download`, { headers: authHeaders() });
+  if (!res.ok) { showToast("Erreur lors du téléchargement.", "danger"); return; }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `nexussecure_report_${id}.pdf`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+async function sendEmailReport(id) {
+  const res = await fetch(`/api/reports/${id}/send-email`, { method: "POST", headers: authHeaders() });
+  const data = await res.json();
+  if (res.ok) showToast(`Email simulé envoyé à ${data.to}.`, "success");
+  else showToast("Erreur lors de l'envoi.", "danger");
+}
+
+document.getElementById("reports-search").addEventListener("input", e => reportsCtl.setQuery(e.target.value));
+wireSortableHeaders(_reportsThead, key => {
+  reportsCtl.toggleSort(key);
+  const { key: k, dir } = reportsCtl.getSort();
+  updateSortIndicator(_reportsThead, k, dir);
+});
+document.getElementById("reports-export").addEventListener("click", () => {
+  downloadCSV("nexussecure_reports.csv", reportsCtl.getFiltered(), [
+    { label: "ID", value: "id" },
+    { label: "Scan", value: r => `Scan #${r.scan_id}` },
+    { label: "Score de risque", value: "risk_score" },
+    { label: "Date", value: r => new Date(r.created_at).toLocaleString("fr-FR") },
+  ]);
+});
+
+(async () => {
+  const tbody = document.getElementById("reports-tbody");
+  tableSkeleton(tbody, 5);
+  const reports = await apiGet("/api/reports");
+  reportsCtl.setData(reports);
 })();
 </script>
 {% endblock %}

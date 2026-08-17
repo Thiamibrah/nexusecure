@@ -31,7 +31,7 @@
     <i class="bi bi-shield-check-fill fs-3" id="diff-icon"></i>
     <div>
       <div class="fw-bold fs-5" id="diff-title"></div>
-      <div style="color:#c9d1d9;font-size:.875rem" id="diff-sub"></div>
+      <div class="text-fg-soft" style="font-size:.875rem" id="diff-sub"></div>
     </div>
   </div>
 
@@ -39,13 +39,13 @@
   <div class="row g-3 mb-4">
     <div class="col-md-6">
       <div class="card-dark p-3">
-        <h6 class="mb-3" style="color:#fd7e14"><i class="bi bi-exclamation-circle me-2"></i>Avant remédiation</h6>
+        <h6 class="mb-3 text-high"><i class="bi bi-exclamation-circle me-2"></i>Avant remédiation</h6>
         <div id="before-stats"></div>
       </div>
     </div>
     <div class="col-md-6">
       <div class="card-dark p-3">
-        <h6 class="mb-3" style="color:#00e676"><i class="bi bi-check-circle me-2"></i>Après remédiation</h6>
+        <h6 class="mb-3 text-accent"><i class="bi bi-check-circle me-2"></i>Après remédiation</h6>
         <div id="after-stats"></div>
       </div>
     </div>
@@ -53,7 +53,7 @@
 
   <!-- Bar chart comparison -->
   <div class="card-dark p-3">
-    <h6 class="mb-3" style="color:#e6edf3;font-weight:600">Comparaison des vulnérabilités par sévérité</h6>
+    <h6 class="mb-3 text-fg" style="font-weight:600">Comparaison des vulnérabilités par sévérité</h6>
     <canvas id="compareChart" height="100"></canvas>
   </div>
 
@@ -81,14 +81,14 @@ async function initSelectors() {
 
 function statRow(label, value, colorClass = "") {
   return `<div class="d-flex justify-content-between py-1 border-bottom border-secondary">
-    <span style="color:#c9d1d9;font-size:.875rem">${label}</span>
+    <span class="text-fg-soft" style="font-size:.875rem">${label}</span>
     <span class="fw-bold ${colorClass}">${value}</span>
   </div>`;
 }
 
 function renderStats(el, d) {
   el.innerHTML =
-    statRow("Score de risque", `${d.risk_score} / 10`) +
+    statRow("Score de risque", `${d.risk_score} / 100`) +
     statRow("Hôtes détectés",  d.hosts) +
     statRow("Ports ouverts",   d.ports) +
     statRow("Vulnérabilités totales", d.total_vulns) +
@@ -101,7 +101,7 @@ function renderStats(el, d) {
 async function runCompare() {
   const b = document.getElementById("sel-before").value;
   const a = document.getElementById("sel-after").value;
-  if (b === a) { alert("Sélectionne deux scans différents."); return; }
+  if (b === a) { showToast("Sélectionne deux scans différents.", "warning"); return; }
 
   const data = await apiGet(`/api/dashboard/compare?scan_before=${b}&scan_after=${a}`);
   const { before, after, diff } = data;
@@ -123,6 +123,7 @@ async function runCompare() {
 
   // Chart
   if (compareChartInstance) compareChartInstance.destroy();
+  const _theme = chartThemeColors();
   compareChartInstance = new Chart(document.getElementById("compareChart"), {
     type: "bar",
     data: {
@@ -141,10 +142,10 @@ async function runCompare() {
       ]
     },
     options: {
-      plugins: { legend: { labels: { color: "#8b949e" } } },
+      plugins: { legend: { labels: { color: _theme.tick } } },
       scales: {
-        x: { ticks: { color: "#8b949e" }, grid: { color: "rgba(255,255,255,.05)" } },
-        y: { ticks: { color: "#8b949e" }, grid: { color: "rgba(255,255,255,.05)" }, beginAtZero: true },
+        x: { ticks: { color: _theme.tick }, grid: { color: _theme.grid } },
+        y: { ticks: { color: _theme.tick }, grid: { color: _theme.grid }, beginAtZero: true },
       }
     }
   });

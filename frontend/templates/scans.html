@@ -33,11 +33,40 @@
   <!-- Scans list -->
   <div class="col-lg-8">
     <div class="card-dark p-3">
-      <h6 class="mb-3" style="color:#e6edf3;font-weight:600"><i class="bi bi-clock-history me-2 text-accent"></i>Historique des scans</h6>
-      <table class="table table-dark table-hover table-sm">
-        <thead><tr><th>#</th><th>Cible</th><th>Statut</th><th>Hôtes</th><th>Date</th><th>Actions</th></tr></thead>
-        <tbody id="scans-tbody"></tbody>
-      </table>
+      <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <h6 class="mb-0 text-fg" style="font-weight:600"><i class="bi bi-clock-history me-2 text-accent"></i>Historique des scans</h6>
+          <small class="text-fg-muted" id="scans-last-updated" style="font-size:.72rem"></small>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+          <input type="text" class="form-control form-control-sm bg-dark border-secondary text-white" id="scans-search"
+                 placeholder="Rechercher une cible..." style="width:180px">
+          <select class="form-select form-select-sm bg-dark border-secondary text-white" id="scans-status-filter" style="width:150px">
+            <option value="">Tous statuts</option>
+            <option value="pending">En attente</option>
+            <option value="running">En cours</option>
+            <option value="completed">Terminé</option>
+            <option value="failed">Échoué</option>
+          </select>
+          <button class="btn btn-sm btn-outline-accent" id="scans-export" title="Exporter en CSV">
+            <i class="bi bi-download me-1"></i>CSV
+          </button>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-dark table-hover table-sm">
+          <thead><tr>
+            <th data-sort="id">#</th>
+            <th data-sort="target">Cible</th>
+            <th data-sort="status">Statut</th>
+            <th data-sort="hostsCount">Hôtes</th>
+            <th data-sort="started_at">Date</th>
+            <th>Actions</th>
+          </tr></thead>
+          <tbody id="scans-tbody"></tbody>
+        </table>
+      </div>
+      <div id="scans-pagination"></div>
     </div>
   </div>
 </div>
@@ -58,10 +87,25 @@
 
 {% block extra_js %}
 <script>
-async function loadScans() {
-  const scans = await apiGet("/api/scans");
+const _p = parseJwt(getToken());
+const _scansThead = document.querySelector("#scans-tbody").closest("table").querySelector("thead");
+
+const scansCtl = createTableController({
+  pageSize: 10,
+  searchFields: ["target"],
+  onRender: (rows, meta) => {
+    renderScanRows(rows);
+    renderPaginationControls(document.getElementById("scans-pagination"), meta, p => scansCtl.setPage(p));
+  },
+});
+
+function renderScanRows(scans) {
   const tbody = document.getElementById("scans-tbody");
   tbody.innerHTML = "";
+  if (!scans.length) {
+    tableEmpty(tbody, 6, "Aucun scan ne correspond à ta recherche.", "bi-radar");
+    return;
+  }
   scans.forEach(s => {
     const reportBtn = _p.role !== 'client'
       ? `<button class="btn btn-sm btn-outline-success me-1" onclick="generateReport(${s.id})" title="Générer rapport">
@@ -75,7 +119,7 @@ async function loadScans() {
         <td>${s.id}</td>
         <td><code>${s.target}</code></td>
         <td>${statusBadge(s.status)}</td>
-        <td>${s.hosts.length}</td>
+        <td>${s.hostsCount}</td>
         <td>${new Date(s.started_at).toLocaleString("fr-FR")}</td>
         <td>
           <button class="btn btn-sm btn-outline-info me-1" onclick="viewScan(${s.id})">
@@ -90,6 +134,42 @@ async function loadScans() {
       </tr>`);
   });
 }
+
+let _scansRaw = [];
+let _scansLoaded = false;
+
+function applyScansFilter(resetPage = true) {
+  const status = document.getElementById("scans-status-filter").value;
+  const filtered = status ? _scansRaw.filter(s => s.status === status) : _scansRaw;
+  scansCtl.setData(filtered, resetPage);
+}
+
+async function loadScans(isPoll = false) {
+  const tbody = document.getElementById("scans-tbody");
+  if (!_scansLoaded) tableSkeleton(tbody, 6);
+  const scans = await apiGet("/api/scans");
+  _scansLoaded = true;
+  _scansRaw = scans.map(s => ({ ...s, hostsCount: s.hosts.length }));
+  applyScansFilter(!isPoll);
+  document.getElementById("scans-last-updated").textContent = "Actualisé à " + new Date().toLocaleTimeString("fr-FR");
+}
+
+document.getElementById("scans-search").addEventListener("input", e => scansCtl.setQuery(e.target.value));
+document.getElementById("scans-status-filter").addEventListener("change", () => applyScansFilter(true));
+wireSortableHeaders(_scansThead, key => {
+  scansCtl.toggleSort(key);
+  const { key: k, dir } = scansCtl.getSort();
+  updateSortIndicator(_scansThead, k, dir);
+});
+document.getElementById("scans-export").addEventListener("click", () => {
+  downloadCSV("nexussecure_scans.csv", scansCtl.getFiltered(), [
+    { label: "ID", value: "id" },
+    { label: "Cible", value: "target" },
+    { label: "Statut", value: "status" },
+    { label: "Hôtes", value: "hostsCount" },
+    { label: "Date", value: r => new Date(r.started_at).toLocaleString("fr-FR") },
+  ]);
+});
 
 document.getElementById("scan-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -113,20 +193,24 @@ async function viewScan(id) {
   s.hosts.forEach(h => {
     html += `<div class="mb-3"><strong class="text-accent">${h.ip}</strong>
       <span class="text-muted ms-2">${h.hostname||""} ${h.os||""}</span>
-      <table class="table table-dark table-sm mt-1">
+      <div class="table-responsive"><table class="table table-dark table-sm mt-1">
         <thead><tr><th>Port</th><th>Proto</th><th>Service</th><th>Version</th></tr></thead><tbody>`;
+    if (!h.ports.length) {
+      html += `<tr><td colspan="4" class="text-fg-muted text-center py-2">Aucun port ouvert détecté</td></tr>`;
+    }
     h.ports.forEach(p => {
       html += `<tr><td>${p.port_number}</td><td>${p.protocol}</td><td>${p.service||"—"}</td><td>${p.version||"—"}</td></tr>`;
     });
-    html += `</tbody></table></div>`;
+    html += `</tbody></table></div></div>`;
   });
   document.getElementById("scan-detail-body").innerHTML = html;
   new bootstrap.Modal(document.getElementById("scanModal")).show();
 }
 
 async function deleteScan(id) {
-  if (!confirm("Supprimer ce scan ?")) return;
+  if (!(await confirmModal(`Supprimer le scan #${id} ? Cette action est irréversible.`))) return;
   await fetch(`/api/scans/${id}`, { method: "DELETE", headers: authHeaders() });
+  showToast("Scan supprimé.", "success");
   loadScans();
 }
 
@@ -138,9 +222,9 @@ async function generateReport(id) {
 async function downloadReportForScan(scanId) {
   const reports = await apiGet("/api/reports");
   const report = reports.find(r => r.scan_id === scanId);
-  if (!report) { alert("Aucun rapport disponible pour ce scan. Contactez votre analyste."); return; }
+  if (!report) { showToast("Aucun rapport disponible pour ce scan. Contactez votre analyste.", "warning"); return; }
   const res = await fetch(`/api/reports/${report.id}/download`, { headers: authHeaders() });
-  if (!res.ok) { alert("Erreur lors du téléchargement"); return; }
+  if (!res.ok) { showToast("Erreur lors du téléchargement.", "danger"); return; }
   const blob = await res.blob();
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -149,7 +233,7 @@ async function downloadReportForScan(scanId) {
 }
 
 loadScans();
-setInterval(loadScans, 10000);
+setInterval(() => loadScans(true), 10000);
 
 // Populate client selector
 (async () => {
@@ -164,7 +248,6 @@ setInterval(loadScans, 10000);
 })();
 
 // Show new scan panel for non-clients, adjust layout
-const _p = parseJwt(getToken());
 if (_p.role !== "client") {
   document.getElementById("new-scan-panel").classList.remove("d-none");
 } else {

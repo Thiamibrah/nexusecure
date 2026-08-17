@@ -6,10 +6,13 @@
 {% block content %}
 <div class="card-dark p-3">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h6><i class="bi bi-terminal me-2 text-accent"></i>Journal système</h6>
-    <button class="btn btn-sm btn-outline-accent" onclick="loadLogs()">
-      <i class="bi bi-arrow-clockwise me-1"></i>Actualiser
-    </button>
+    <h6 class="mb-0"><i class="bi bi-terminal me-2 text-accent"></i>Journal système</h6>
+    <div class="d-flex align-items-center gap-2">
+      <small class="text-fg-muted" id="logs-last-updated" style="font-size:.72rem"></small>
+      <button class="btn btn-sm btn-outline-accent" onclick="loadLogs()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Actualiser
+      </button>
+    </div>
   </div>
   <div id="log-container"
        style="background:#0d1117;border:1px solid #30363d;border-radius:8px;
@@ -32,6 +35,7 @@ async function loadLogs() {
     return `<div style="color:${color};padding:1px 0;border-bottom:1px solid rgba(255,255,255,.03)">${escHtml(line)}</div>`;
   }).join("") || "<span class='text-muted'>Aucun log disponible</span>";
   container.scrollTop = container.scrollHeight;
+  document.getElementById("logs-last-updated").textContent = "Actualisé à " + new Date().toLocaleTimeString("fr-FR");
 }
 
 function escHtml(s) {

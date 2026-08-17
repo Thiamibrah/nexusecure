@@ -6,15 +6,26 @@
 <div class="row justify-content-center">
   <div class="col-lg-5">
 
+    <!-- Mot de passe obligatoire — non fermable, affiché seulement si nécessaire -->
+    <div id="must-change-banner" class="alert alert-warning d-none mb-4 d-flex align-items-start gap-2">
+      <i class="bi bi-shield-exclamation fs-5"></i>
+      <div>
+        <strong>Changement de mot de passe requis</strong>
+        <div style="font-size:.88rem">Ton compte utilise encore un mot de passe temporaire ou réinitialisé par un
+          administrateur. Choisis-en un nouveau ci-dessous pour continuer — le reste de l'application reste
+          inaccessible jusque-là.</div>
+      </div>
+    </div>
+
     <!-- Infos compte -->
     <div class="card-dark p-4 mb-4">
       <h6 class="text-accent mb-3"><i class="bi bi-person-circle me-2"></i>Informations du compte</h6>
       <div id="profile-info">
-        <div class="mb-2"><span style="color:#8b949e">Nom d'utilisateur :</span>
+        <div class="mb-2"><span class="text-fg-muted">Nom d'utilisateur :</span>
           <strong class="ms-2 text-white" id="info-username">—</strong></div>
-        <div class="mb-2"><span style="color:#8b949e">Email :</span>
+        <div class="mb-2"><span class="text-fg-muted">Email :</span>
           <strong class="ms-2 text-white" id="info-email">—</strong></div>
-        <div><span style="color:#8b949e">Rôle :</span>
+        <div><span class="text-fg-muted">Rôle :</span>
           <span class="ms-2 badge" id="info-role">—</span></div>
       </div>
     </div>
@@ -25,17 +36,18 @@
       <div id="pwd-alert" class="alert d-none mb-3"></div>
       <form id="pwd-form" autocomplete="off">
         <div class="mb-3">
-          <label class="form-label" style="color:#8b949e;font-size:.85rem">Mot de passe actuel</label>
+          <label class="form-label text-fg-muted" style="font-size:.85rem">Mot de passe actuel</label>
           <input type="password" class="form-control bg-dark border-secondary text-white"
                  id="current-pwd" autocomplete="current-password" required>
         </div>
         <div class="mb-3">
-          <label class="form-label" style="color:#8b949e;font-size:.85rem">Nouveau mot de passe</label>
+          <label class="form-label text-fg-muted" style="font-size:.85rem">Nouveau mot de passe</label>
           <input type="password" class="form-control bg-dark border-secondary text-white"
                  id="new-pwd" autocomplete="new-password" minlength="8" required>
+          <div class="form-text text-fg-muted" style="font-size:.72rem">8+ caractères, avec majuscule, minuscule, chiffre et caractère spécial</div>
         </div>
         <div class="mb-4">
-          <label class="form-label" style="color:#8b949e;font-size:.85rem">Confirmer le nouveau mot de passe</label>
+          <label class="form-label text-fg-muted" style="font-size:.85rem">Confirmer le nouveau mot de passe</label>
           <input type="password" class="form-control bg-dark border-secondary text-white"
                  id="confirm-pwd" autocomplete="new-password" minlength="8" required>
         </div>
@@ -61,6 +73,9 @@
   r.textContent = roleLabels[me.role] || me.role;
   r.style.background = roleColors[me.role] || "#6c757d";
   r.style.color = "#fff";
+  if (me.must_change_password) {
+    document.getElementById("must-change-banner").classList.remove("d-none");
+  }
 })();
 
 document.getElementById("pwd-form").addEventListener("submit", async (e) => {
@@ -93,6 +108,7 @@ document.getElementById("pwd-form").addEventListener("submit", async (e) => {
     alertEl.textContent = "Mot de passe mis à jour avec succès !";
     alertEl.classList.remove("d-none");
     e.target.reset();
+    document.getElementById("must-change-banner").classList.add("d-none");
   } catch (ex) {
     alertEl.className = "alert alert-danger";
     alertEl.textContent = ex.message;
