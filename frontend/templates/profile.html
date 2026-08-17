@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Mon profil — NexusSecure{% endblock %}
+{% block topbar_title %}Mon profil{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+
+    <!-- Infos compte -->
+    <div class="card-dark p-4 mb-4">
+      <h6 class="text-accent mb-3"><i class="bi bi-person-circle me-2"></i>Informations du compte</h6>
+      <div id="profile-info">
+        <div class="mb-2"><span style="color:#8b949e">Nom d'utilisateur :</span>
+          <strong class="ms-2 text-white" id="info-username">—</strong></div>
+        <div class="mb-2"><span style="color:#8b949e">Email :</span>
+          <strong class="ms-2 text-white" id="info-email">—</strong></div>
+        <div><span style="color:#8b949e">Rôle :</span>
+          <span class="ms-2 badge" id="info-role">—</span></div>
+      </div>
+    </div>
+
+    <!-- Changer mot de passe -->
+    <div class="card-dark p-4">
+      <h6 class="text-accent mb-3"><i class="bi bi-key me-2"></i>Changer mon mot de passe</h6>
+      <div id="pwd-alert" class="alert d-none mb-3"></div>
+      <form id="pwd-form" autocomplete="off">
+        <div class="mb-3">
+          <label class="form-label" style="color:#8b949e;font-size:.85rem">Mot de passe actuel</label>
+          <input type="password" class="form-control bg-dark border-secondary text-white"
+                 id="current-pwd" autocomplete="current-password" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" style="color:#8b949e;font-size:.85rem">Nouveau mot de passe</label>
+          <input type="password" class="form-control bg-dark border-secondary text-white"
+                 id="new-pwd" autocomplete="new-password" minlength="8" required>
+        </div>
+        <div class="mb-4">
+          <label class="form-label" style="color:#8b949e;font-size:.85rem">Confirmer le nouveau mot de passe</label>
+          <input type="password" class="form-control bg-dark border-secondary text-white"
+                 id="confirm-pwd" autocomplete="new-password" minlength="8" required>
+        </div>
+        <button type="submit" class="btn btn-accent w-100">
+          <i class="bi bi-check-lg me-1"></i>Mettre à jour le mot de passe
+        </button>
+      </form>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(async () => {
+  const me = await apiGet("/api/users/me");
+  document.getElementById("info-username").textContent = me.username;
+  document.getElementById("info-email").textContent = me.email;
+  const roleLabels = { admin: "Administrateur", analyst: "Analyste", client: "Client" };
+  const roleColors = { admin: "#dc3545", analyst: "#1a73e8", client: "#6c757d" };
+  const r = document.getElementById("info-role");
+  r.textContent = roleLabels[me.role] || me.role;
+  r.style.background = roleColors[me.role] || "#6c757d";
+  r.style.color = "#fff";
+})();
+
+document.getElementById("pwd-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const alertEl = document.getElementById("pwd-alert");
+  const np = document.getElementById("new-pwd").value;
+  const cp = document.getElementById("confirm-pwd").value;
+
+  if (np !== cp) {
+    alertEl.className = "alert alert-danger";
+    alertEl.textContent = "Les mots de passe ne correspondent pas.";
+    alertEl.classList.remove("d-none");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/users/me/password", {
+      method: "PATCH",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        current_password: document.getElementById("current-pwd").value,
+        new_password: np,
+      }),
+    });
+    if (!res.ok) {
+      const d = await res.json();
+      throw new Error(d.detail || "Erreur");
+    }
+    alertEl.className = "alert alert-success";
+    alertEl.textContent = "Mot de passe mis à jour avec succès !";
+    alertEl.classList.remove("d-none");
+    e.target.reset();
+  } catch (ex) {
+    alertEl.className = "alert alert-danger";
+    alertEl.textContent = ex.message;
+    alertEl.classList.remove("d-none");
+  }
+});
+</script>
+{% endblock %}

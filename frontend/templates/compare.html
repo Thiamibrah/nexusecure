@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Comparaison — NexusSecure{% endblock %}
+{% block nav_compare %}active{% endblock %}
+{% block topbar_title %}Comparaison Avant / Après Remédiation{% endblock %}
+
+{% block content %}
+<!-- Sélecteurs -->
+<div class="card-dark p-3 mb-4">
+  <div class="row g-3 align-items-end">
+    <div class="col-md-4">
+      <label class="form-label text-muted small">Scan AVANT remédiation</label>
+      <select class="form-select bg-dark border-secondary text-white" id="sel-before"></select>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label text-muted small">Scan APRÈS remédiation</label>
+      <select class="form-select bg-dark border-secondary text-white" id="sel-after"></select>
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-accent w-100" onclick="runCompare()">
+        <i class="bi bi-arrow-left-right me-1"></i>Comparer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Results -->
+<div id="compare-result" class="d-none">
+
+  <!-- Score diff banner -->
+  <div id="diff-banner" class="alert mb-4 d-flex align-items-center gap-3" style="border-radius:10px">
+    <i class="bi bi-shield-check-fill fs-3" id="diff-icon"></i>
+    <div>
+      <div class="fw-bold fs-5" id="diff-title"></div>
+      <div style="color:#c9d1d9;font-size:.875rem" id="diff-sub"></div>
+    </div>
+  </div>
+
+  <!-- Side by side cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card-dark p-3">
+        <h6 class="mb-3" style="color:#fd7e14"><i class="bi bi-exclamation-circle me-2"></i>Avant remédiation</h6>
+        <div id="before-stats"></div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card-dark p-3">
+        <h6 class="mb-3" style="color:#00e676"><i class="bi bi-check-circle me-2"></i>Après remédiation</h6>
+        <div id="after-stats"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bar chart comparison -->
+  <div class="card-dark p-3">
+    <h6 class="mb-3" style="color:#e6edf3;font-weight:600">Comparaison des vulnérabilités par sévérité</h6>
+    <canvas id="compareChart" height="100"></canvas>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let compareChartInstance = null;
+
+async function initSelectors() {
+  const scans = await apiGet("/api/scans/");
+  const done  = scans.filter(s => s.status === "completed");
+  [document.getElementById("sel-before"), document.getElementById("sel-after")].forEach((sel, i) => {
+    done.forEach((s, idx) => {
+      const opt = document.createElement("option");
+      opt.value = s.id;
+      opt.textContent = `#${s.id} — ${s.target} (${new Date(s.started_at).toLocaleDateString("fr-FR")})`;
+      if (i === 0 && idx === 0) opt.selected = true;
+      if (i === 1 && idx === 1) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function statRow(label, value, colorClass = "") {
+  return `<div class="d-flex justify-content-between py-1 border-bottom border-secondary">
+    <span style="color:#c9d1d9;font-size:.875rem">${label}</span>
+    <span class="fw-bold ${colorClass}">${value}</span>
+  </div>`;
+}
+
+function renderStats(el, d) {
+  el.innerHTML =
+    statRow("Score de risque", `${d.risk_score} / 10`) +
+    statRow("Hôtes détectés",  d.hosts) +
+    statRow("Ports ouverts",   d.ports) +
+    statRow("Vulnérabilités totales", d.total_vulns) +
+    statRow("Critiques",  d.critical, "text-danger") +
+    statRow("Élevées",    d.high,     "text-warning") +
+    statRow("Moyennes",   d.medium,   "text-info") +
+    statRow("Faibles",    d.low,      "text-secondary");
+}
+
+async function runCompare() {
+  const b = document.getElementById("sel-before").value;
+  const a = document.getElementById("sel-after").value;
+  if (b === a) { alert("Sélectionne deux scans différents."); return; }
+
+  const data = await apiGet(`/api/dashboard/compare?scan_before=${b}&scan_after=${a}`);
+  const { before, after, diff } = data;
+
+  // Banner
+  const improved = diff.risk_score <= 0;
+  const banner = document.getElementById("diff-banner");
+  banner.style.background = improved ? "rgba(0,230,118,.08)"  : "rgba(253,126,20,.08)";
+  banner.style.border      = improved ? "1px solid rgba(0,230,118,.25)" : "1px solid rgba(253,126,20,.25)";
+  document.getElementById("diff-icon").style.color = improved ? "#00e676" : "#fd7e14";
+  document.getElementById("diff-title").textContent = improved
+    ? `Score amélioré de ${Math.abs(diff.risk_score)} points`
+    : `Score dégradé de ${Math.abs(diff.risk_score)} points`;
+  document.getElementById("diff-sub").textContent =
+    `${Math.abs(diff.total_vulns)} vulnérabilité${Math.abs(diff.total_vulns)>1?'s':''} ${diff.total_vulns<=0?'corrigée':'ajoutée'}${Math.abs(diff.total_vulns)>1?'s':''} · ${Math.abs(diff.critical)} critique${Math.abs(diff.critical)>1?'s':''} ${diff.critical<=0?'résolue':'ajoutée'}${Math.abs(diff.critical)>1?'s':''}`;
+
+  renderStats(document.getElementById("before-stats"), before);
+  renderStats(document.getElementById("after-stats"),  after);
+
+  // Chart
+  if (compareChartInstance) compareChartInstance.destroy();
+  compareChartInstance = new Chart(document.getElementById("compareChart"), {
+    type: "bar",
+    data: {
+      labels: ["Critiques", "Élevées", "Moyennes", "Faibles"],
+      datasets: [
+        {
+          label: "Avant",
+          data: [before.critical, before.high, before.medium, before.low],
+          backgroundColor: "rgba(253,126,20,.6)", borderRadius: 4,
+        },
+        {
+          label: "Après",
+          data: [after.critical, after.high, after.medium, after.low],
+          backgroundColor: "rgba(0,230,118,.6)", borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      plugins: { legend: { labels: { color: "#8b949e" } } },
+      scales: {
+        x: { ticks: { color: "#8b949e" }, grid: { color: "rgba(255,255,255,.05)" } },
+        y: { ticks: { color: "#8b949e" }, grid: { color: "rgba(255,255,255,.05)" }, beginAtZero: true },
+      }
+    }
+  });
+
+  document.getElementById("compare-result").classList.remove("d-none");
+}
+
+initSelectors();
+</script>
+{% endblock %}

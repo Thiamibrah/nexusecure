@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — NexusSecure{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+{% block nav_dashboard2 %}active{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Alerts panel -->
+<div id="alerts-panel" class="mb-3 d-none">
+  <div class="card-dark p-3">
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <h6 class="mb-0" style="color:#e6edf3;font-weight:600"><i class="bi bi-bell-fill text-accent me-2"></i>Alertes</h6>
+      <button onclick="localStorage.removeItem('nexus_dismissed_alerts');location.reload()"
+              class="btn btn-sm btn-outline-secondary" style="font-size:.75rem">
+        <i class="bi bi-arrow-clockwise me-1"></i>Réafficher tout
+      </button>
+    </div>
+    <div id="alerts-list"></div>
+  </div>
+</div>
+
+<!-- ═══ VUE ADMIN ═══ -->
+<div id="view-admin" class="d-none">
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-icon bg-blue"><i class="bi bi-people"></i></div>
+        <div><div class="kpi-value" id="a-kpi-clients">—</div><div class="kpi-label">Clients</div></div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-icon bg-green"><i class="bi bi-radar"></i></div>
+        <div><div class="kpi-value" id="a-kpi-scans">—</div><div class="kpi-label">Scans totaux</div></div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-icon bg-orange"><i class="bi bi-bug"></i></div>
+        <div><div class="kpi-value" id="a-kpi-vulns">—</div><div class="kpi-label">Vulnérabilités</div></div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-icon bg-red"><i class="bi bi-exclamation-triangle"></i></div>
+        <div><div class="kpi-value text-danger" id="a-kpi-critical">—</div><div class="kpi-label">Critiques</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-dark p-3">
+    <h6 class="mb-3" style="color:#e6edf3;font-weight:600">
+      <i class="bi bi-people-fill text-accent me-2"></i>Vue par client
+    </h6>
+    <div class="table-responsive">
+      <table class="table table-dark table-hover table-sm mb-0">
+        <thead>
+          <tr style="border-bottom:1px solid #30363d">
+            <th style="color:#8b949e;font-size:.78rem">Client</th>
+            <th style="color:#8b949e;font-size:.78rem">Email</th>
+            <th style="color:#8b949e;font-size:.78rem">Scans</th>
+            <th style="color:#8b949e;font-size:.78rem">Vulnérabilités</th>
+            <th style="color:#8b949e;font-size:.78rem">Critiques</th>
+            <th style="color:#8b949e;font-size:.78rem">Score risque</th>
+          </tr>
+        </thead>
+        <tbody id="admin-clients-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VUE ANALYSTE ═══ -->
+<div id="view-analyst" class="d-none">
+  <div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-icon bg-blue"><i class="bi bi-radar"></i></div>
+        <div><div class="kpi-value" id="kpi-scans">—</div><div class="kpi-label">Scans réalisés</div></div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-icon bg-green"><i class="bi bi-pc-display"></i></div>
+        <div><div class="kpi-value" id="kpi-hosts">—</div><div class="kpi-label">Machines détectées</div></div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-icon bg-orange"><i class="bi bi-bug"></i></div>
+        <div><div class="kpi-value" id="kpi-vulns">—</div><div class="kpi-label">Vulnérabilités</div></div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+      <div class="kpi-card">
+        <div class="kpi-icon bg-red"><i class="bi bi-exclamation-triangle"></i></div>
+        <div><div class="kpi-value text-danger" id="kpi-critical">—</div><div class="kpi-label">Critiques</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="row g-3 mb-4">
+    <div class="col-lg-3">
+      <div class="card-dark p-3 h-100 d-flex flex-column align-items-center justify-content-center">
+        <h6 class="mb-3 w-100" style="color:#e6edf3;font-weight:600">Score de risque global</h6>
+        <div style="position:relative;width:160px;height:160px">
+          <canvas id="gaugeChart"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <span id="gauge-value" style="font-size:2rem;font-weight:800;color:#e6edf3">—</span>
+            <span style="font-size:.72rem;color:#8b949e">/ 100</span>
+          </div>
+        </div>
+        <div id="gauge-label" class="mt-2 badge" style="font-size:.78rem"></div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card-dark p-3 h-100">
+        <h6 class="mb-3" style="color:#e6edf3;font-weight:600">Répartition des vulnérabilités</h6>
+        <canvas id="chartVulns" height="200"></canvas>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card-dark p-3 h-100">
+        <h6 class="mb-3" style="color:#e6edf3;font-weight:600">
+          <i class="bi bi-clock-history me-2 text-accent"></i>Historique des scans
+        </h6>
+        <table class="table table-dark table-hover table-sm mb-0">
+          <thead>
+            <tr style="border-bottom:1px solid #30363d">
+              <th style="color:#8b949e;font-size:.78rem">#</th>
+              <th style="color:#8b949e;font-size:.78rem">Cible</th>
+              <th style="color:#8b949e;font-size:.78rem">Statut</th>
+              <th style="color:#8b949e;font-size:.78rem">Date</th>
+            </tr>
+          </thead>
+          <tbody id="recent-scans-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <a href="/scans" class="btn btn-accent"><i class="bi bi-radar me-2"></i>Nouveau scan</a>
+</div>
+
+<!-- ═══ VUE CLIENT (executive) ═══ -->
+<div id="view-client" class="d-none">
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="card-dark p-4 h-100 text-center d-flex flex-column align-items-center justify-content-center">
+        <div style="position:relative;width:180px;height:180px;margin-bottom:1rem">
+          <canvas id="c-gaugeChart"></canvas>
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+            <span id="c-score" style="font-size:2.5rem;font-weight:800;color:#e6edf3">—</span>
+            <span style="font-size:.8rem;color:#8b949e">/ 100</span>
+          </div>
+        </div>
+        <h5 class="mb-1" style="color:#e6edf3;font-weight:700">Votre score de sécurité</h5>
+        <div id="c-score-badge" class="badge fs-6 px-3 py-2 mt-1">—</div>
+        <p class="mt-3 mb-0" style="color:#8b949e;font-size:.85rem">Basé sur vos derniers audits de sécurité.</p>
+      </div>
+    </div>
+    <div class="col-lg-8">
+      <div class="row g-3">
+        <div class="col-6">
+          <div class="kpi-card">
+            <div class="kpi-icon bg-red"><i class="bi bi-exclamation-octagon"></i></div>
+            <div><div class="kpi-value text-danger" id="c-kpi-critical">—</div><div class="kpi-label">Risques critiques</div></div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="kpi-card">
+            <div class="kpi-icon bg-orange"><i class="bi bi-shield-exclamation"></i></div>
+            <div><div class="kpi-value" style="color:#fd7e14" id="c-kpi-high">—</div><div class="kpi-label">Risques élevés</div></div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="card-dark p-3">
+            <h6 style="color:#e6edf3;font-weight:600" class="mb-3">
+              <i class="bi bi-list-check text-accent me-2"></i>Ce qu'il faut faire en priorité
+            </h6>
+            <div id="c-priorities"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-dark p-3">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h6 class="mb-0" style="color:#e6edf3;font-weight:600">
+        <i class="bi bi-file-earmark-pdf text-accent me-2"></i>Mes rapports
+      </h6>
+      <a href="/reports" class="btn btn-sm btn-outline-secondary">Voir tous</a>
+    </div>
+    <div id="c-reports-list" class="d-flex flex-column gap-2"></div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function scoreColor(s) {
+  return s > 80 ? "#dc3545" : s > 60 ? "#fd7e14" : s > 40 ? "#ffc107" : s > 20 ? "#0dcaf0" : "#00e676";
+}
+function scoreLabel(s) {
+  return s > 80 ? "CRITIQUE" : s > 60 ? "ÉLEVÉ" : s > 40 ? "MOYEN" : s > 20 ? "FAIBLE" : "SÉCURISÉ";
+}
+function makeDoughnut(canvasId, score) {
+  const c = scoreColor(score);
+  new Chart(document.getElementById(canvasId), {
+    type: "doughnut",
+    data: { datasets: [{ data: [score, 100 - score],
+      backgroundColor: [c, "rgba(255,255,255,.06)"], borderWidth: 0,
+      circumference: 270, rotation: 225 }] },
+    options: { cutout: "75%", plugins: { legend: { display: false }, tooltip: { enabled: false } },
+               animation: { animateRotate: true, duration: 900 } }
+  });
+}
+
+function dismissAlert(key, btn) {
+  const d = JSON.parse(localStorage.getItem("nexus_dismissed_alerts") || "[]");
+  if (!d.includes(key)) d.push(key);
+  localStorage.setItem("nexus_dismissed_alerts", JSON.stringify(d.slice(-50)));
+  btn.closest(".alert-row").remove();
+  if (!document.getElementById("alerts-list").children.length)
+    document.getElementById("alerts-panel").classList.add("d-none");
+}
+
+async function loadAlerts() {
+  try {
+    const alerts = await apiGet("/api/dashboard/alerts");
+    const dismissed = JSON.parse(localStorage.getItem("nexus_dismissed_alerts") || "[]");
+    const visible = alerts.filter(a => !dismissed.includes(a.type + "_" + a.date.slice(0, 13)));
+    if (!visible.length) return;
+    const list = document.getElementById("alerts-list");
+    const iconMap  = { scan_failed: "bi-x-circle-fill", critical_vuln: "bi-exclamation-triangle-fill", new_report: "bi-file-earmark-check-fill" };
+    const colorMap = { danger: "#dc3545", success: "#00e676" };
+    visible.forEach(a => {
+      const key = a.type + "_" + a.date.slice(0, 13);
+      const color = colorMap[a.level] || "#ffc107";
+      list.insertAdjacentHTML("beforeend",
+        `<div class="alert-row d-flex align-items-center gap-2 mb-2 p-2"
+             style="background:${color}18;border:1px solid ${color}55;border-radius:8px">
+          <i class="bi ${iconMap[a.type]||'bi-info-circle'}" style="color:${color};font-size:1.1rem;flex-shrink:0"></i>
+          <span style="color:#e6edf3;font-size:.88rem;flex-grow:1">${a.message}</span>
+          <button onclick="dismissAlert('${key}',this)"
+            style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+                   border-radius:50%;width:24px;height:24px;flex-shrink:0;
+                   color:#e6edf3;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">
+            <i class="bi bi-x" style="font-size:.9rem"></i>
+          </button>
+        </div>`);
+    });
+    document.getElementById("alerts-panel").classList.remove("d-none");
+  } catch {}
+}
+
+(async () => {
+  const role = parseJwt(getToken()).role || "client";
+  await loadAlerts();
+
+  // ── ADMIN ──
+  if (role === "admin") {
+    document.getElementById("view-admin").classList.remove("d-none");
+    const s = await apiGet("/api/dashboard/admin-stats");
+    document.getElementById("a-kpi-clients").textContent  = s.total_clients;
+    document.getElementById("a-kpi-scans").textContent    = s.total_scans;
+    document.getElementById("a-kpi-vulns").textContent    = s.total_vulnerabilities;
+    document.getElementById("a-kpi-critical").textContent = s.critical;
+    const tbody = document.getElementById("admin-clients-tbody");
+    if (!s.clients.length) {
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="color:#8b949e">Aucun client</td></tr>`;
+    }
+    s.clients.forEach(c => {
+      const scoreHtml = c.risk_score !== null
+        ? `<span style="color:${scoreColor(c.risk_score)};font-weight:600">${c.risk_score}/100</span>`
+        : `<span style="color:#8b949e">—</span>`;
+      tbody.insertAdjacentHTML("beforeend", `
+        <tr>
+          <td><strong style="color:#e6edf3">${c.username}</strong></td>
+          <td style="color:#8b949e">${c.email}</td>
+          <td>${c.scans}</td>
+          <td>${c.vulnerabilities}</td>
+          <td>${c.critical > 0 ? `<span class="text-danger fw-bold">${c.critical}</span>` : c.critical}</td>
+          <td>${scoreHtml}</td>
+        </tr>`);
+    });
+    return;
+  }
+
+  // ── CLIENT ──
+  if (role === "client") {
+    document.getElementById("view-client").classList.remove("d-none");
+    const s = await apiGet("/api/dashboard/stats");
+    const score = s.latest_risk_score;
+    document.getElementById("c-score").textContent      = score;
+    document.getElementById("c-kpi-critical").textContent = s.critical;
+    document.getElementById("c-kpi-high").textContent     = s.high;
+    const badge = document.getElementById("c-score-badge");
+    badge.textContent = scoreLabel(score);
+    badge.style.cssText += `;background:${scoreColor(score)}33;color:${scoreColor(score)};border:1px solid ${scoreColor(score)}66`;
+    makeDoughnut("c-gaugeChart", score);
+    const prio = document.getElementById("c-priorities");
+    if (s.critical > 0) prio.insertAdjacentHTML("beforeend",
+      `<div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-danger">PRIORITÉ 1</span>
+        <span style="color:#e6edf3">${s.critical} risque${s.critical > 1 ? 's' : ''} critique${s.critical > 1 ? 's' : ''} à corriger immédiatement</span>
+      </div>`);
+    if (s.high > 0) prio.insertAdjacentHTML("beforeend",
+      `<div class="d-flex align-items-center gap-2 mb-2">
+        <span class="badge bg-warning text-dark">PRIORITÉ 2</span>
+        <span style="color:#e6edf3">${s.high} risque${s.high > 1 ? 's' : ''} élevé${s.high > 1 ? 's' : ''} — à corriger sous 30 jours</span>
+      </div>`);
+    if (!s.critical && !s.high) prio.innerHTML =
+      `<div style="color:#00e676"><i class="bi bi-check-circle-fill me-2"></i>Aucun risque critique ou élevé — bonne posture !</div>`;
+    try {
+      const reports = await apiGet("/api/reports/");
+      const list = document.getElementById("c-reports-list");
+      if (!reports.length) { list.innerHTML = `<p style="color:#8b949e">Aucun rapport disponible.</p>`; }
+      else reports.slice(0, 5).forEach(r => {
+        list.insertAdjacentHTML("beforeend", `
+          <div class="d-flex align-items-center justify-content-between p-2"
+               style="background:rgba(255,255,255,.04);border-radius:8px">
+            <div>
+              <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+              <span style="color:#e6edf3">Rapport #${r.id}</span>
+              <small class="ms-2" style="color:#8b949e">${new Date(r.created_at).toLocaleDateString("fr-FR")}</small>
+            </div>
+            <a href="/api/reports/${r.id}/download" class="btn btn-sm btn-outline-secondary">
+              <i class="bi bi-download me-1"></i>PDF
+            </a>
+          </div>`);
+      });
+    } catch {}
+    return;
+  }
+
+  // ── ANALYSTE ──
+  document.getElementById("view-analyst").classList.remove("d-none");
+  const stats = await apiGet("/api/dashboard/stats");
+  document.getElementById("kpi-scans").textContent    = stats.total_scans;
+  document.getElementById("kpi-hosts").textContent    = stats.total_hosts;
+  document.getElementById("kpi-vulns").textContent    = stats.total_vulnerabilities;
+  document.getElementById("kpi-critical").textContent = stats.critical;
+  const score = stats.latest_risk_score;
+  document.getElementById("gauge-value").textContent = score;
+  const lbl = document.getElementById("gauge-label");
+  lbl.textContent = scoreLabel(score);
+  lbl.style.cssText += `;background:${scoreColor(score)}33;color:${scoreColor(score)};border:1px solid ${scoreColor(score)}66`;
+  makeDoughnut("gaugeChart", score);
+  const vstats = await apiGet("/api/vulnerabilities/stats");
+  const cMap = { critical: "#dc3545", high: "#fd7e14", medium: "#ffc107", low: "#0dcaf0", info: "#6c757d" };
+  new Chart(document.getElementById("chartVulns"), {
+    type: "doughnut",
+    data: { labels: Object.keys(vstats).map(s => s.toUpperCase()),
+            datasets: [{ data: Object.values(vstats),
+                         backgroundColor: Object.keys(vstats).map(k => cMap[k] || "#6c757d"),
+                         borderWidth: 0 }] },
+    options: { plugins: { legend: { labels: { color: "#8b949e", boxWidth: 12 } } } }
+  });
+  const tbody = document.getElementById("recent-scans-tbody");
+  stats.recent_scans.forEach(s => {
+    tbody.insertAdjacentHTML("beforeend",
+      `<tr>
+        <td>${s.id}</td><td><code>${s.target}</code></td>
+        <td>${statusBadge(s.status)}</td>
+        <td>${new Date(s.started_at).toLocaleString("fr-FR")}</td>
+      </tr>`);
+  });
+})();
+</script>
+{% endblock %}

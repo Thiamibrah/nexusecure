@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Scans — NexusSecure{% endblock %}
+{% block nav_scans %}active{% endblock %}
+{% block topbar_title %}Scans Réseau{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <!-- New scan form — hidden for clients -->
+  <div class="col-lg-4 d-none" id="new-scan-panel">
+    <div class="card-dark p-3">
+      <h6 class="text-accent mb-3"><i class="bi bi-radar me-2"></i>Nouveau scan</h6>
+      <div id="scan-alert" class="alert d-none"></div>
+      <form id="scan-form">
+        <div class="mb-3">
+          <label class="form-label text-muted small">Cible (IP ou CIDR)</label>
+          <input type="text" class="form-control bg-dark border-secondary text-white"
+                 id="scan-target" placeholder="192.168.1.0/24" required>
+          <div class="form-text text-muted">Ex: 192.168.1.10 ou 192.168.1.0/24</div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label text-muted small">Assigner à un client (optionnel)</label>
+          <select class="form-select bg-dark border-secondary text-white" id="scan-client">
+            <option value="">— Aucun —</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-accent w-100">
+          <i class="bi bi-play-fill me-2"></i>Lancer le scan
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scans list -->
+  <div class="col-lg-8">
+    <div class="card-dark p-3">
+      <h6 class="mb-3" style="color:#e6edf3;font-weight:600"><i class="bi bi-clock-history me-2 text-accent"></i>Historique des scans</h6>
+      <table class="table table-dark table-hover table-sm">
+        <thead><tr><th>#</th><th>Cible</th><th>Statut</th><th>Hôtes</th><th>Date</th><th>Actions</th></tr></thead>
+        <tbody id="scans-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Scan detail modal -->
+<div class="modal fade" id="scanModal" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content bg-dark text-white border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Détails du scan</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="scan-detail-body"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadScans() {
+  const scans = await apiGet("/api/scans");
+  const tbody = document.getElementById("scans-tbody");
+  tbody.innerHTML = "";
+  scans.forEach(s => {
+    const reportBtn = _p.role !== 'client'
+      ? `<button class="btn btn-sm btn-outline-success me-1" onclick="generateReport(${s.id})" title="Générer rapport">
+           <i class="bi bi-file-pdf"></i>
+         </button>`
+      : `<button class="btn btn-sm btn-outline-accent me-1" onclick="downloadReportForScan(${s.id})" title="Télécharger rapport">
+           <i class="bi bi-download"></i>
+         </button>`;
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td>${s.id}</td>
+        <td><code>${s.target}</code></td>
+        <td>${statusBadge(s.status)}</td>
+        <td>${s.hosts.length}</td>
+        <td>${new Date(s.started_at).toLocaleString("fr-FR")}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-info me-1" onclick="viewScan(${s.id})">
+            <i class="bi bi-eye"></i>
+          </button>
+          ${reportBtn}
+          ${_p.role !== 'client' ? `
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteScan(${s.id})">
+            <i class="bi bi-trash"></i>
+          </button>` : ''}
+        </td>
+      </tr>`);
+  });
+}
+
+document.getElementById("scan-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const alert = document.getElementById("scan-alert");
+  const clientId = document.getElementById("scan-client")?.value || null;
+  try {
+    await apiPost("/api/scans", {
+      target: document.getElementById("scan-target").value,
+      client_id: clientId ? parseInt(clientId) : null,
+    });
+    alert.className = "alert alert-success"; alert.textContent = "Scan lancé !"; alert.classList.remove("d-none");
+    loadScans();
+  } catch (ex) {
+    alert.className = "alert alert-danger"; alert.textContent = ex.message; alert.classList.remove("d-none");
+  }
+});
+
+async function viewScan(id) {
+  const s = await apiGet(`/api/scans/${id}`);
+  let html = `<p><strong>Cible:</strong> ${s.target} &nbsp; <strong>Statut:</strong> ${statusBadge(s.status)}</p>`;
+  s.hosts.forEach(h => {
+    html += `<div class="mb-3"><strong class="text-accent">${h.ip}</strong>
+      <span class="text-muted ms-2">${h.hostname||""} ${h.os||""}</span>
+      <table class="table table-dark table-sm mt-1">
+        <thead><tr><th>Port</th><th>Proto</th><th>Service</th><th>Version</th></tr></thead><tbody>`;
+    h.ports.forEach(p => {
+      html += `<tr><td>${p.port_number}</td><td>${p.protocol}</td><td>${p.service||"—"}</td><td>${p.version||"—"}</td></tr>`;
+    });
+    html += `</tbody></table></div>`;
+  });
+  document.getElementById("scan-detail-body").innerHTML = html;
+  new bootstrap.Modal(document.getElementById("scanModal")).show();
+}
+
+async function deleteScan(id) {
+  if (!confirm("Supprimer ce scan ?")) return;
+  await fetch(`/api/scans/${id}`, { method: "DELETE", headers: authHeaders() });
+  loadScans();
+}
+
+async function generateReport(id) {
+  await apiPost(`/api/reports/${id}`, {});
+  window.location.href = "/reports";
+}
+
+async function downloadReportForScan(scanId) {
+  const reports = await apiGet("/api/reports");
+  const report = reports.find(r => r.scan_id === scanId);
+  if (!report) { alert("Aucun rapport disponible pour ce scan. Contactez votre analyste."); return; }
+  const res = await fetch(`/api/reports/${report.id}/download`, { headers: authHeaders() });
+  if (!res.ok) { alert("Erreur lors du téléchargement"); return; }
+  const blob = await res.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `nexussecure_report_${report.id}.pdf`;
+  a.click();
+}
+
+loadScans();
+setInterval(loadScans, 10000);
+
+// Populate client selector
+(async () => {
+  const sel = document.getElementById("scan-client");
+  if (!sel) return;
+  try {
+    const users = await apiGet("/api/users");
+    users.filter(u => u.role === "client").forEach(u => {
+      sel.insertAdjacentHTML("beforeend", `<option value="${u.id}">${u.username} (${u.email})</option>`);
+    });
+  } catch {}
+})();
+
+// Show new scan panel for non-clients, adjust layout
+const _p = parseJwt(getToken());
+if (_p.role !== "client") {
+  document.getElementById("new-scan-panel").classList.remove("d-none");
+} else {
+  // Full width table for client
+  document.querySelector(".col-lg-8")?.classList.replace("col-lg-8", "col-lg-12");
+}
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+
+# Virtual environments
+venv/
+backend/venv/
+
+# Secrets
+.env
+
+# SQLite databases
+*.db
+
+# Generated at runtime
+backend/app/logs/*.log
+backend/app/reports/files/*.pdf
+
+# OS
+.DS_Store
+Thumbs.db

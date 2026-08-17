@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Logs — NexusSecure{% endblock %}
+{% block nav_logs %}active{% endblock %}
+{% block topbar_title %}Logs Système{% endblock %}
+
+{% block content %}
+<div class="card-dark p-3">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h6><i class="bi bi-terminal me-2 text-accent"></i>Journal système</h6>
+    <button class="btn btn-sm btn-outline-accent" onclick="loadLogs()">
+      <i class="bi bi-arrow-clockwise me-1"></i>Actualiser
+    </button>
+  </div>
+  <div id="log-container"
+       style="background:#0d1117;border:1px solid #30363d;border-radius:8px;
+              padding:1rem;height:70vh;overflow-y:auto;font-family:monospace;font-size:.8rem">
+    <span class="text-muted">Chargement...</span>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadLogs() {
+  const data = await apiGet("/api/logs?lines=200");
+  const container = document.getElementById("log-container");
+  container.innerHTML = data.lines.map(line => {
+    let color = "#c9d1d9";
+    if (line.includes("[ERROR]") || line.includes("ERROR"))   color = "#dc3545";
+    else if (line.includes("[WARNING]") || line.includes("WARNING")) color = "#fd7e14";
+    else if (line.includes("[INFO]") || line.includes("INFO"))  color = "#00e676";
+    return `<div style="color:${color};padding:1px 0;border-bottom:1px solid rgba(255,255,255,.03)">${escHtml(line)}</div>`;
+  }).join("") || "<span class='text-muted'>Aucun log disponible</span>";
+  container.scrollTop = container.scrollHeight;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+loadLogs();
+setInterval(loadLogs, 15000);
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+/* =============================================
+   NexusSecure — Cybersecurity Theme
+   Dark / Navy / Cyber-green
+   ============================================= */
+
+:root {
+  --bg-primary:   #0d1117;
+  --bg-sidebar:   #0d1b2a;
+  --bg-card:      #161b22;
+  --bg-topbar:    #0d1b2a;
+  --accent:       #00e676;
+  --accent-blue:  #1a73e8;
+  --text-primary: #e6edf3;
+  --text-muted:   #8b949e;
+  --border:       #30363d;
+}
+
+/* Base */
+*, body { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg-primary); color: var(--text-primary); font-family: "Segoe UI", system-ui, sans-serif; }
+
+/* ---- Login ---- */
+.login-body { min-height: 100vh; background: radial-gradient(ellipse at center, #0d1b2a 0%, #0d1117 100%); }
+.login-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.6);
+}
+.text-accent { color: var(--accent) !important; }
+.btn-accent  { background: var(--accent); color: #0d1117; border: none; }
+.btn-accent:hover { background: #69f0ae; color: #0d1117; }
+.btn-outline-accent { border-color: var(--accent); color: var(--accent); }
+.btn-outline-accent:hover { background: var(--accent); color: #0d1117; }
+
+/* ---- Layout ---- */
+#wrapper { min-height: 100vh; }
+#sidebar  { width: 240px; min-height: 100vh; display: flex; flex-direction: column; transition: width .25s; }
+.bg-sidebar { background: var(--bg-sidebar); border-right: 1px solid var(--border); }
+
+.sidebar-brand { border-bottom: 1px solid var(--border); }
+.sidebar-link  { color: var(--text-muted); border-radius: 6px; padding: .55rem .75rem; margin-bottom: 2px; }
+.sidebar-link:hover, .sidebar-link.active { color: var(--accent); background: rgba(0,230,118,.08); }
+
+.topbar {
+  height: 56px;
+  background: var(--bg-topbar);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+
+/* ---- Cards ---- */
+.card-dark {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+/* Titles inside cards are always readable */
+.card-dark h5,
+.card-dark h6,
+.card-dark label,
+.card-dark .form-text,
+.topbar .text-muted {
+  color: #c9d1d9 !important;
+  font-weight: 400;
+}
+.card-dark h5,
+.card-dark h6 {
+  font-weight: 600;
+}
+
+/* ---- KPI cards ---- */
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.kpi-icon {
+  width: 48px; height: 48px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; color: #fff; flex-shrink: 0;
+}
+.bg-blue   { background: #1a73e8; }
+.bg-green  { background: #00c853; }
+.bg-orange { background: #fd7e14; }
+.bg-red    { background: #dc3545; }
+.kpi-value { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+.kpi-label { color: var(--text-muted); font-size: .78rem; margin-top: 3px; }
+
+/* ---- Tables ---- */
+.table-dark { --bs-table-bg: transparent; --bs-table-border-color: var(--border); }
+.table-dark th { color: var(--text-muted); font-weight: 500; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+.table-hover > tbody > tr:hover { background: rgba(255,255,255,.03); }
+
+/* ---- Form controls ---- */
+.form-control,
+.form-select {
+  background-color: #0d1b2a !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-primary) !important;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 .2rem rgba(0,230,118,.2) !important;
+  background-color: #0d1b2a !important;
+  color: var(--text-primary) !important;
+}
+.form-control::placeholder { color: #4b5563 !important; }
+
+/* Kill autofill white background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px #0d1b2a inset !important;
+  transition: background-color 9999s ease-in-out 0s;
+  caret-color: var(--text-primary);
+}
+
+/* ---- Severity badges ---- */
+.badge-critical { background: #dc3545; color: #fff; }
+.badge-high     { background: #fd7e14; color: #fff; }
+.badge-medium   { background: #ffc107; color: #000; }
+.badge-low      { background: #0dcaf0; color: #000; }
+.badge-info     { background: #6c757d; color: #fff; }
+
+/* ---- Sidebar collapse ---- */
+#sidebar { overflow: hidden; }
+#sidebar.collapsed { width: 62px; }
+#sidebar.collapsed .sidebar-brand span.fw-bold,
+#sidebar.collapsed .sidebar-link span,
+#sidebar.collapsed #sidebar-user,
+#sidebar.collapsed .btn-outline-danger span { display: none; }
+#sidebar.collapsed .sidebar-brand { justify-content: center; padding: .75rem !important; }
+#sidebar.collapsed .sidebar-link   { justify-content: center; padding: .6rem !important; }
+#sidebar.collapsed .sidebar-link i { margin: 0 !important; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  #sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    z-index: 200;
+    transform: translateX(0);
+    transition: transform .25s;
+  }
+  #sidebar.collapsed {
+    width: 240px;          /* full width when "collapsed" means hidden on mobile */
+    transform: translateX(-100%);
+  }
+  #page-content {
+    width: 100%;
+    margin-left: 0 !important;
+  }
+  /* Overlay behind sidebar on mobile */
+  #sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 199;
+  }
+  #sidebar-overlay.visible { display: block; }
+}

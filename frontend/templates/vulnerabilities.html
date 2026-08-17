@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Vulnérabilités — NexusSecure{% endblock %}
+{% block nav_vulns %}active{% endblock %}
+{% block topbar_title %}Vulnérabilités{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card-dark p-3 mb-3 d-flex gap-3 flex-wrap align-items-end">
+  <div>
+    <label class="form-label text-muted small mb-1">Scan</label>
+    <select class="form-select form-select-sm bg-dark border-secondary text-white" id="filter-scan">
+      <option value="">Tous</option>
+    </select>
+  </div>
+  <div>
+    <label class="form-label text-muted small mb-1">Sévérité</label>
+    <select class="form-select form-select-sm bg-dark border-secondary text-white" id="filter-severity">
+      <option value="">Toutes</option>
+      <option value="critical">Critique</option>
+      <option value="high">Élevée</option>
+      <option value="medium">Moyenne</option>
+      <option value="low">Faible</option>
+    </select>
+  </div>
+  <button class="btn btn-sm btn-accent" onclick="loadVulns()">Filtrer</button>
+</div>
+
+<!-- Table -->
+<div class="card-dark p-3">
+  <table class="table table-dark table-hover table-sm">
+    <thead>
+      <tr>
+        <th>Sévérité</th><th>Titre</th><th>IP</th><th>Port</th><th>CVSS</th>
+        <th>Impact</th><th>Recommandation</th><th>Commentaire</th>
+      </tr>
+    </thead>
+    <tbody id="vulns-tbody"></tbody>
+  </table>
+</div>
+
+<!-- Comment modal -->
+<div class="modal fade" id="commentModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content bg-dark text-white border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title">Commentaire technique</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <textarea class="form-control bg-dark border-secondary text-white" id="comment-input" rows="4"
+                  placeholder="Ajouter une note technique..."></textarea>
+      </div>
+      <div class="modal-footer border-secondary">
+        <button class="btn btn-accent" onclick="saveComment()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const _p = parseJwt(getToken());
+let _commentVulnId = null;
+
+async function loadVulns() {
+  const scan_id = document.getElementById("filter-scan").value;
+  const severity = document.getElementById("filter-severity").value;
+  const params = new URLSearchParams();
+  if (scan_id) params.set("scan_id", scan_id);
+  if (severity) params.set("severity", severity);
+  const vulns = await apiGet(`/api/vulnerabilities?${params}`);
+  const tbody = document.getElementById("vulns-tbody");
+  tbody.innerHTML = "";
+  const canComment = _p.role === "admin" || _p.role === "analyst";
+  vulns.forEach(v => {
+    const commentBtn = canComment
+      ? `<button class="btn btn-sm btn-outline-secondary" onclick="openComment(${v.id}, \`${(v.comment||'').replace(/`/g,'')}\`)">
+           <i class="bi bi-pencil"></i>
+         </button>`
+      : `<small style="color:#8b949e">${v.comment || '—'}</small>`;
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td>${severityBadge(v.severity)}</td>
+        <td>${v.title}</td>
+        <td><code>${v.host_ip}</code></td>
+        <td>${v.port_number || "—"}</td>
+        <td>${v.cvss_score || "—"}</td>
+        <td><small style="color:#c9d1d9">${v.impact || "—"}</small></td>
+        <td><small style="color:#c9d1d9">${v.recommendation || "—"}</small></td>
+        <td>${commentBtn}</td>
+      </tr>`);
+  });
+}
+
+function openComment(id, existing) {
+  _commentVulnId = id;
+  document.getElementById("comment-input").value = existing;
+  new bootstrap.Modal(document.getElementById("commentModal")).show();
+}
+
+async function saveComment() {
+  if (!_commentVulnId) return;
+  const comment = document.getElementById("comment-input").value;
+  try {
+    await fetch(`/api/vulnerabilities/${_commentVulnId}/comment`, {
+      method: "PATCH",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify({ comment }),
+    });
+    bootstrap.Modal.getInstance(document.getElementById("commentModal")).hide();
+    loadVulns();
+  } catch (e) { alert("Erreur : " + e.message); }
+}
+
+async function initScansFilter() {
+  const scans = await apiGet("/api/scans");
+  const sel = document.getElementById("filter-scan");
+  scans.forEach(s => sel.insertAdjacentHTML("beforeend",
+    `<option value="${s.id}">${s.target} (#${s.id})</option>`));
+}
+
+initScansFilter();
+loadVulns();
+</script>
+{% endblock %}

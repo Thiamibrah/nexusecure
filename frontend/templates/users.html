@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Utilisateurs — NexusSecure{% endblock %}
+{% block nav_users %}active{% endblock %}
+{% block topbar_title %}Gestion des Utilisateurs{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card-dark p-3">
+      <h6 class="text-accent mb-3"><i class="bi bi-person-plus me-2"></i>Créer un utilisateur</h6>
+      <div id="user-alert" class="alert d-none"></div>
+      <form id="user-form" autocomplete="off">
+        <div class="mb-2">
+          <input type="text" class="form-control form-control-sm bg-dark border-secondary text-white"
+                 name="username" placeholder="Nom d'utilisateur" required
+                 autocomplete="new-password">
+        </div>
+        <div class="mb-2">
+          <input type="email" class="form-control form-control-sm bg-dark border-secondary text-white"
+                 name="email" placeholder="Adresse email" required
+                 autocomplete="new-password">
+        </div>
+        <div class="mb-2">
+          <input type="password" class="form-control form-control-sm bg-dark border-secondary text-white"
+                 name="password" placeholder="Mot de passe (min 8 car.)" required
+                 autocomplete="new-password">
+        </div>
+        <div class="mb-3">
+          <select class="form-select form-select-sm bg-dark border-secondary text-white" name="role">
+            <option value="client">Client</option>
+            <option value="analyst">Analyste</option>
+            <option value="admin">Administrateur</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-sm btn-accent w-100">Créer</button>
+      </form>
+    </div>
+  </div>
+  <div class="col-lg-8">
+    <div class="card-dark p-3">
+      <table class="table table-dark table-hover table-sm">
+        <thead><tr><th>#</th><th>Username</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Actions</th></tr></thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function loadUsers() {
+  const users = await apiGet("/api/users");
+  const tbody = document.getElementById("users-tbody");
+  tbody.innerHTML = "";
+  users.forEach(u => {
+    const active = u.is_active
+      ? '<span class="badge bg-success">Actif</span>'
+      : '<span class="badge bg-secondary">Inactif</span>';
+    tbody.insertAdjacentHTML("beforeend", `
+      <tr>
+        <td>${u.id}</td>
+        <td>${u.username}</td>
+        <td>${u.email}</td>
+        <td><span class="badge" style="background:#1a73e8">${u.role}</span></td>
+        <td>${active}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-warning me-1" onclick="toggleUser(${u.id}, ${u.is_active})" title="Activer/Désactiver">
+            <i class="bi bi-${u.is_active ? 'pause' : 'play'}"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-info me-1" onclick="resetPwd(${u.id}, '${u.username}')" title="Réinitialiser le mot de passe">
+            <i class="bi bi-key"></i>
+          </button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.id})" title="Supprimer">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      </tr>`);
+  });
+}
+
+document.getElementById("user-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const alertEl = document.getElementById("user-alert");
+  try {
+    const res = await fetch("/api/users/", {
+      method: "POST",
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      body: JSON.stringify(Object.fromEntries(fd)),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      // Pydantic renvoie parfois detail comme tableau
+      const msg = Array.isArray(data.detail)
+        ? data.detail.map(e => e.msg).join(", ")
+        : (data.detail || "Erreur");
+      throw new Error(msg);
+    }
+    alertEl.className = "alert alert-success";
+    alertEl.textContent = `Utilisateur "${data.username}" créé avec succès !`;
+    alertEl.classList.remove("d-none");
+    e.target.reset();
+    loadUsers();
+  } catch (ex) {
+    alertEl.className = "alert alert-danger";
+    alertEl.textContent = ex.message;
+    alertEl.classList.remove("d-none");
+  }
+});
+
+async function toggleUser(id, active) {
+  await fetch(`/api/users/${id}`, {
+    method: "PATCH", headers: { ...authHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ is_active: !active }),
+  });
+  loadUsers();
+}
+
+async function resetPwd(id, username) {
+  const newPwd = prompt(`Nouveau mot de passe pour "${username}" (min 8 caractères) :`);
+  if (!newPwd) return;
+  if (newPwd.length < 8) { alert("Le mot de passe doit faire au moins 8 caractères."); return; }
+  const res = await fetch(`/api/users/${id}/reset-password`, {
+    method: "PATCH",
+    headers: { ...authHeaders(), "Content-Type": "application/json" },
+    body: JSON.stringify({ new_password: newPwd }),
+  });
+  if (res.ok) {
+    const alertEl = document.getElementById("user-alert");
+    alertEl.className = "alert alert-success";
+    alertEl.textContent = `Mot de passe de "${username}" réinitialisé avec succès.`;
+    alertEl.classList.remove("d-none");
+  } else {
+    alert("Erreur lors de la réinitialisation.");
+  }
+}
+
+async function deleteUser(id) {
+  if (!confirm("Supprimer cet utilisateur ?")) return;
+  await fetch(`/api/users/${id}`, { method: "DELETE", headers: authHeaders() });
+  loadUsers();
+}
+
+loadUsers();
+</script>
+{% endblock %}
