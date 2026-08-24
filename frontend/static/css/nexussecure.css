@@ -40,7 +40,6 @@
   --border:       #dde2e8;
 }
 :root[data-theme="light"] body { background: var(--bg-primary); color: var(--text-primary); }
-:root[data-theme="light"] .bg-sidebar { box-shadow: 1px 0 0 var(--border); } /* border-right reads better as a shadow on white */
 :root[data-theme="light"] .card-dark,
 :root[data-theme="light"] .kpi-card { box-shadow: 0 1px 3px rgba(20,24,31,.06); }
 
@@ -83,8 +82,30 @@
   caret-color: var(--text-primary);
 }
 :root[data-theme="light"] ::-webkit-scrollbar-thumb { background: #c7cdd6; }
+/* Same WCAG problem as the JS semanticColor() palette (see below): #fd7e14 is ~2.6:1
+   on white. Deepened to match semanticColor("high"). */
+:root[data-theme="light"] .text-high { color: #b8530a !important; }
 /* The log viewer stays a dark "terminal" panel in both themes on purpose — its text
    colors are tuned for that dark background, same idea as a code block. */
+
+/* Bootstrap's own --bs-warning/--bs-info are tuned for use on dark backgrounds too —
+   as outline buttons on a white card their text/border color (which IS the button's
+   only color, no fill until hover) drops to ~1.6:1 / ~2:1 contrast. Overriding via
+   Bootstrap 5.3's own per-component CSS variables rather than fighting !important. */
+:root[data-theme="light"] .btn-outline-warning {
+  --bs-btn-color: #8a6d00; --bs-btn-border-color: #8a6d00;
+  --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #8a6d00; --bs-btn-hover-border-color: #8a6d00;
+  --bs-btn-active-color: #fff; --bs-btn-active-bg: #8a6d00; --bs-btn-active-border-color: #8a6d00;
+}
+:root[data-theme="light"] .btn-outline-info {
+  --bs-btn-color: #0e7c93; --bs-btn-border-color: #0e7c93;
+  --bs-btn-hover-color: #fff; --bs-btn-hover-bg: #0e7c93; --bs-btn-hover-border-color: #0e7c93;
+  --bs-btn-active-color: #fff; --bs-btn-active-bg: #0e7c93; --bs-btn-active-border-color: #0e7c93;
+}
+/* Same problem again, this time on Bootstrap's plain text-color utilities (used for
+   raw severity counts on the Comparaison page). */
+:root[data-theme="light"] .text-warning { color: #8a6d00 !important; }
+:root[data-theme="light"] .text-info    { color: #0e7c93 !important; }
 
 /* ---- Text color utilities ----
    Use these instead of inline style="color:#…" so a palette change is a one-line

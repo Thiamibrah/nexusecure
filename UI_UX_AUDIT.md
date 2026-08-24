@@ -449,4 +449,52 @@ sombre par défaut à la fin.
 
 ---
 
+## Correctif post-Phase 5 — contraste du mode clair
+
+Signalé par l'utilisateur ("le mode clair n'est pas bien fait") après un premier tour de
+test manuel. Investigation en direct plutôt que suppositions : un script de contraste
+WCAG (ratio texte/fond calculé sur chaque élément visible) a été passé sur toutes les
+pages en mode clair.
+
+**Cause racine** : plusieurs couleurs "sémantiques" (sévérité, statut) sont calibrées
+pour ressortir sur fond bleu-nuit — vert néon, cyan clair, ambre — et tombent à des ratios
+de 1.6:1 à 2.6:1 une fois passées en texte sur fond blanc (le minimum WCAG AA est 4.5:1
+pour du texte normal). Trouvé d'abord sur un score "0/100" en vert quasi invisible, puis
+étendu à tout ce qui partage ces teintes :
+
+| Trouvé sur | Élément | Ratio avant | Cause |
+|---|---|---|---|
+| Dashboard (toutes vues) | `scoreColor()`, panneau d'alertes, graphique de vulnérabilités, historique de score | 1.6–1.7:1 | Fonction JS retournant des hex fixes |
+| Rapports, Scans, Utilisateurs | `.btn-outline-info`, `.btn-outline-warning` | 1.6–2:1 | Couleurs Bootstrap brutes (`--bs-info`/`--bs-warning`) |
+| Comparaison | `.text-warning`, `.text-info` | 1.6–2:1 | Même cause, version "texte" de Bootstrap |
+| Client (KPI "Risques élevés") | `.text-high` (ajoutée en Phase 1) | 2.57:1 | Jamais rendue dépendante du thème |
+| Vulnérabilités | badge `HIGH` (texte blanc sur `#fd7e14`) | 2.57:1 | **Préexistant, indépendant du thème** — confirmé identique en sombre, non corrigé ici (hors périmètre "mode clair") |
+
+**Corrigé** :
+- `nexussecure.js` — nouvelle fonction `semanticColor(key)` avec une palette assombrie
+  dédiée au mode clair (`critical`/`high`/`medium`/`low`/`safe`), utilisée partout où une
+  couleur de sévérité était calculée en JS (`scoreColor`, alertes, graphiques, toasts).
+- `nexussecure.css` — `.text-high`, `.text-warning`, `.text-info`,
+  `.btn-outline-warning`, `.btn-outline-info` redirigés vers les mêmes teintes assombries
+  sous `[data-theme="light"]` (ces deux derniers via les variables `--bs-btn-*` de
+  Bootstrap 5.3 plutôt que de lutter contre sa spécificité).
+- Suppression d'un `box-shadow` redondant sur la sidebar (doublonnait la bordure déjà
+  correcte).
+
+Toutes les nouvelles teintes vérifiées ≥ 4.5:1 sur blanc avant application (calcul de
+luminance relative, pas au jugé).
+
+**Vérifié en direct** avec le même script de contraste automatisé, cache CSS forcé à
+chaque page pour écarter les faux positifs : Dashboard (admin, analyste, client), Scans,
+Utilisateurs, Rapports, Vulnérabilités, Comparaison, Profil, Logs — **0 problème
+restant**, à l'exception du badge `HIGH` préexistant signalé ci-dessus mais non traité
+(hors périmètre de cette correction, affecte les deux thèmes également).
+
+**Leçon retenue** : le premier passage "mode clair" avait vérifié la structure (tokens,
+classes Bootstrap réécrites) mais pas le contraste réel des couleurs sémantiques
+calculées en JavaScript, qui échappent entièrement au système de tokens CSS. À surveiller
+pour tout futur ajout de couleur "de statut".
+
+---
+
 *Toutes les phases de `UI_UX_AUDIT.md` sont maintenant terminées.*

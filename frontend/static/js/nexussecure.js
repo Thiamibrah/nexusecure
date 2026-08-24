@@ -40,6 +40,21 @@ function chartThemeColors() {
     : { tick: "#8b949e", grid: "rgba(255,255,255,.05)" };
 }
 
+// ---- Theme-aware semantic colors ----
+// The dark-tuned severity/status palette (bright neon green, cyan, amber especially)
+// is chosen to pop on navy — several of these fail WCAG contrast used as *text* on a
+// white page (checked: safe green #00e676 is ~1.7:1 on white, need ≥4.5:1). Light mode
+// gets its own deepened set instead of reusing the same hex values everywhere a score
+// or status is rendered as colored text (KPI numbers, gauge labels, chart lines/icons).
+const SEMANTIC_COLOR = {
+  dark:  { critical: "#dc3545", high: "#fd7e14", medium: "#ffc107", low: "#0dcaf0", safe: "#00e676", info: "#6c757d" },
+  light: { critical: "#dc3545", high: "#b8530a", medium: "#8a6d00", low: "#0e7c93", safe: "#087a41", info: "#6c757d" },
+};
+function semanticColor(key) {
+  const theme = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  return SEMANTIC_COLOR[theme][key] || SEMANTIC_COLOR[theme].info;
+}
+
 (function initThemeToggle() {
   const btn = document.getElementById("theme-toggle");
   if (!btn) return;
@@ -107,7 +122,7 @@ function chartThemeColors() {
   const badge = document.getElementById("notif-badge");
   const list = document.getElementById("notif-list");
   const iconMap  = { scan_failed: "bi-x-circle-fill", critical_vuln: "bi-exclamation-triangle-fill", new_report: "bi-file-earmark-check-fill" };
-  const colorMap = { danger: "#dc3545", success: "#00e676" };
+  const colorMap = { danger: semanticColor("critical"), success: semanticColor("safe") };
 
   async function loadNotifs() {
     try {
@@ -247,7 +262,12 @@ function severityBadge(sev) {
 
 // ---- Toasts (replaces alert() for action results) ----
 const TOAST_ICON  = { success: "bi-check-circle-fill", danger: "bi-x-circle-fill", warning: "bi-exclamation-triangle-fill", info: "bi-info-circle-fill" };
-const TOAST_COLOR = { success: "#00e676", danger: "#dc3545", warning: "#fd7e14", info: "#1a73e8" };
+function _toastColor(type) {
+  // Recomputed per-toast (not a module-level const) so it's always correct even
+  // though in practice the theme only changes via a full page reload.
+  return { success: semanticColor("safe"), danger: semanticColor("critical"),
+           warning: semanticColor("high"), info: "#1a73e8" }[type] || "#1a73e8";
+}
 
 function _toastContainer() {
   let c = document.getElementById("toast-container");
@@ -262,7 +282,7 @@ function _toastContainer() {
 }
 
 function showToast(message, type = "success") {
-  const color = TOAST_COLOR[type] || TOAST_COLOR.info;
+  const color = _toastColor(type);
   const el = document.createElement("div");
   el.className = "toast align-items-center border-0";
   el.setAttribute("role", "alert");

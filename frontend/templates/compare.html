@@ -111,7 +111,7 @@ async function runCompare() {
   const banner = document.getElementById("diff-banner");
   banner.style.background = improved ? "rgba(0,230,118,.08)"  : "rgba(253,126,20,.08)";
   banner.style.border      = improved ? "1px solid rgba(0,230,118,.25)" : "1px solid rgba(253,126,20,.25)";
-  document.getElementById("diff-icon").style.color = improved ? "#00e676" : "#fd7e14";
+  document.getElementById("diff-icon").style.color = improved ? semanticColor("safe") : semanticColor("high");
   document.getElementById("diff-title").textContent = improved
     ? `Score amélioré de ${Math.abs(diff.risk_score)} points`
     : `Score dégradé de ${Math.abs(diff.risk_score)} points`;

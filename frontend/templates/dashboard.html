@@ -207,7 +207,8 @@
 {% block extra_js %}
 <script>
 function scoreColor(s) {
-  return s > 80 ? "#dc3545" : s > 60 ? "#fd7e14" : s > 40 ? "#ffc107" : s > 20 ? "#0dcaf0" : "#00e676";
+  const key = s > 80 ? "critical" : s > 60 ? "high" : s > 40 ? "medium" : s > 20 ? "low" : "safe";
+  return semanticColor(key);
 }
 function scoreLabel(s) {
   return s > 80 ? "CRITIQUE" : s > 60 ? "ÉLEVÉ" : s > 40 ? "MOYEN" : s > 20 ? "FAIBLE" : "SÉCURISÉ";
@@ -243,10 +244,10 @@ async function loadAlerts() {
     if (!visible.length) return;
     const list = document.getElementById("alerts-list");
     const iconMap  = { scan_failed: "bi-x-circle-fill", critical_vuln: "bi-exclamation-triangle-fill", new_report: "bi-file-earmark-check-fill" };
-    const colorMap = { danger: "#dc3545", success: "#00e676" };
+    const colorMap = { danger: semanticColor("critical"), success: semanticColor("safe") };
     visible.forEach(a => {
       const key = a.type + "_" + a.date.slice(0, 13);
-      const color = colorMap[a.level] || "#ffc107";
+      const color = colorMap[a.level] || semanticColor("medium");
       list.insertAdjacentHTML("beforeend",
         `<div class="alert-row d-flex align-items-center gap-2 mb-2 p-2"
              style="background:${color}18;border:1px solid ${color}55;border-radius:8px">
@@ -343,11 +344,11 @@ async function loadAlerts() {
             datasets: [{
               label: "Score de risque",
               data: chronological.map(r => r.risk_score),
-              borderColor: "#00e676",
+              borderColor: semanticColor("safe"),
               backgroundColor: "rgba(0,230,118,.12)",
               fill: true,
               tension: .3,
-              pointBackgroundColor: "#00e676",
+              pointBackgroundColor: semanticColor("safe"),
               pointRadius: 3,
               pointHoverRadius: 5,
             }],
@@ -396,12 +397,13 @@ async function loadAlerts() {
   lbl.style.cssText += `;background:${scoreColor(score)}33;color:${scoreColor(score)};border:1px solid ${scoreColor(score)}66`;
   makeDoughnut("gaugeChart", score);
   const vstats = await apiGet("/api/vulnerabilities/stats");
-  const cMap = { critical: "#dc3545", high: "#fd7e14", medium: "#ffc107", low: "#0dcaf0", info: "#6c757d" };
+  const cMap = { critical: semanticColor("critical"), high: semanticColor("high"),
+                 medium: semanticColor("medium"), low: semanticColor("low"), info: semanticColor("info") };
   new Chart(document.getElementById("chartVulns"), {
     type: "doughnut",
     data: { labels: Object.keys(vstats).map(s => s.toUpperCase()),
             datasets: [{ data: Object.values(vstats),
-                         backgroundColor: Object.keys(vstats).map(k => cMap[k] || "#6c757d"),
+                         backgroundColor: Object.keys(vstats).map(k => cMap[k] || semanticColor("info")),
                          borderWidth: 0 }] },
     options: { plugins: { legend: { labels: { color: chartThemeColors().tick, boxWidth: 12 } } } }
   });
